@@ -13,23 +13,39 @@
 - ✅ GitHub repo created and all files pushed → https://github.com/Attackcoin/dazi-app
 - ✅ AGENT_STATE.md created
 
+### [2026-03-08] Firebase Backend Code
+- ✅ `functions/src/ai.js` — All Claude Haiku integrations (voice parse, description, icebreakers, recap card, monthly report)
+- ✅ `functions/src/antiGhosting.js` — Check-in window, GPS validation, ghost count, badge awards
+- ✅ `functions/src/applications.js` — Apply, accept, reject, 24h auto-expire, gender quota validation, review+rating
+- ✅ `functions/src/deposits.js` — Freeze, payment callback, refund with time-based ratio
+- ✅ `functions/src/notifications.js` — FCM push for 12 trigger scenarios
+- ✅ `firestore.rules` — Complete security rules
+- ✅ `firestore.indexes.json` — Composite indexes for key queries
+- ✅ `firebase.json` — Project config + Emulator setup
+- ✅ `.gitignore` — Protects API keys from being committed
+
 ---
 
 ## Next Tasks
 
-### Phase 1 — Environment Setup (Task 1)
-1. Register Firebase project — create 3 projects: `dazi-dev`, `dazi-staging`, `dazi-prod`
-2. Enable Firebase services: Auth / Firestore / Realtime Database / Cloud Functions / FCM / Storage
-3. Enable Auth providers: Phone OTP + Google + Apple
-4. Register FlutterFlow account → connect to Firebase (`dazi-dev` first)
-5. Apply for Google Maps API Key → configure in FlutterFlow
-6. Apply for Claude Haiku API Key → store in Firebase Functions env vars (never in frontend)
+### 🔴 YOU (Manual Steps Required) — Phase 1 Environment Setup
+These require logging into external websites — cannot be automated:
+1. Go to https://firebase.google.com → Create 3 projects: `dazi-dev`, `dazi-staging`, `dazi-prod`
+2. In each project, enable: Auth (Phone+Google+Apple) / Firestore / Realtime DB / Functions (Blaze plan) / Storage / FCM
+3. Go to https://flutterflow.io → Register → Upgrade to Pro ($30/mo) → New Project → Connect to `dazi-dev`
+4. Go to https://console.cloud.google.com → Enable Maps SDK (Android+iOS) + Places API → Get API Key
+5. Go to https://console.anthropic.com → Get Claude API Key → Add $5 credit
+6. Go to https://www.algolia.com → Register → Create app `dazi-search` → Note App ID + Admin Key
+7. After Firebase created: run `firebase login` then `firebase use dazi-dev` in the `dazi-app` folder
+8. Deploy Security Rules: `firebase deploy --only firestore:rules,firestore:indexes`
+9. Deploy Functions: `cd functions && npm install` then `firebase deploy --only functions --project dazi-dev`
+10. Set env vars: `firebase functions:config:set claude.api_key="YOUR_KEY"` (repeat for all keys in env.example)
 
-### Phase 2 — Data Models (Task 2)
-- Define Firestore collections in Firebase Console (or via code)
-- Collections: `users`, `posts`, `applications`, `matches`, `deposits`, `reviews`, `reports`
-- Subcollections: `chats/{chatId}/messages`
-- Set Firebase Security Rules (rules defined in design doc)
+### ⬅️ CLAUDE — Phase 3 Core Pages (Next Code Task)
+Once Firebase is set up, Claude will generate:
+- FlutterFlow page specs + custom code for: Login, Onboarding (5 steps), 广场 (square), Post creation with voice AI, Chat, Profile
+- Algolia search integration code
+- Share + H5 landing page
 
 ---
 
