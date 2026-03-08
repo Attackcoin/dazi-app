@@ -1,0 +1,27 @@
+# Firebase 本地配置（包含 API Keys，绝不提交）
+.runtimeconfig.json
+functions/.env
+functions/.env.local
+
+# Firebase 生成文件
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+firestore-debug.log
+ui-debug.log
+database-debug.log
+
+# Node.js
+functions/node_modules/
+node_modules/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# 测试输出
+coverage/

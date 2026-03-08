@@ -1,0 +1,72 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── users ─────────────────────────────────────────────
+    // 任何登录用户可读基础信息，本人才能修改
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.uid == userId;
+    }
+
+    // ── posts ─────────────────────────────────────────────
+    // 登录用户可读，登录用户可创建，发布者才能修改/删除
+    match /posts/{postId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth.uid == resource.data.userId;
+    }
+
+    // ── applications ──────────────────────────────────────
+    // 申请者本人 或 帖子发布者 才能读取
+    // 登录用户可以创建新申请（提交）
+    match /applications/{appId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.applicantId ||
+        request.auth.uid == get(/databases/$(database)/documents/posts/$(resource.data.postId)).data.userId
+      );
+      allow create: if request.auth != null;
+      allow update: if request.auth.uid == get(
+        /databases/$(database)/documents/posts/$(resource.data.postId)
+      ).data.userId; // 只有发布者可以改状态（accept/reject）
+    }
+
+    // ── matches ───────────────────────────────────────────
+    // 参与者才能读取自己的搭子，写入由 Cloud Functions 负责
+    match /matches/{matchId} {
+      allow read: if request.auth != null &&
+        request.auth.uid in resource.data.participants;
+      allow write: if false; // 只允许 Functions 写
+    }
+
+    // ── deposits ──────────────────────────────────────────
+    // 只有本人可以读自己的押金记录，写入由 Functions 负责
+    match /deposits/{depId} {
+      allow read: if request.auth != null &&
+        request.auth.uid == resource.data.userId;
+      allow write: if false;
+    }
+
+    // ── reviews ───────────────────────────────────────────
+    // 所有登录用户可读（展示在个人主页），本人可创建
+    match /reviews/{reviewId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if false;
+    }
+
+    // ── reports ───────────────────────────────────────────
+    // 登录用户可举报（创建），只有管理员可读（通过 Functions）
+    match /reports/{repId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if false;
+    }
+
+    // ── monthlyReports ────────────────────────────────────
+    match /monthlyReports/{reportId} {
+      allow read: if request.auth != null &&
+        request.auth.uid == resource.data.userId;
+      allow write: if false;
+    }
+  }
+}
