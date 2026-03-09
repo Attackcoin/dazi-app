@@ -19,7 +19,6 @@ service cloud.firestore {
 
     // ── applications ──────────────────────────────────────
     // 申请者本人 或 帖子发布者 才能读取
-    // 登录用户可以创建新申请（提交）
     match /applications/{appId} {
       allow read: if request.auth != null && (
         request.auth.uid == resource.data.applicantId ||
@@ -28,19 +27,19 @@ service cloud.firestore {
       allow create: if request.auth != null;
       allow update: if request.auth.uid == get(
         /databases/$(database)/documents/posts/$(resource.data.postId)
-      ).data.userId; // 只有发布者可以改状态（accept/reject）
+      ).data.userId;
     }
 
     // ── matches ───────────────────────────────────────────
-    // 参与者才能读取自己的搭子，写入由 Cloud Functions 负责
+    // 参与者才能读取，写入由 Cloud Functions 负责
     match /matches/{matchId} {
       allow read: if request.auth != null &&
         request.auth.uid in resource.data.participants;
-      allow write: if false; // 只允许 Functions 写
+      allow write: if false;
     }
 
     // ── deposits ──────────────────────────────────────────
-    // 只有本人可以读自己的押金记录，写入由 Functions 负责
+    // 只有本人可以读，写入由 Functions 负责
     match /deposits/{depId} {
       allow read: if request.auth != null &&
         request.auth.uid == resource.data.userId;
@@ -48,7 +47,6 @@ service cloud.firestore {
     }
 
     // ── reviews ───────────────────────────────────────────
-    // 所有登录用户可读（展示在个人主页），本人可创建
     match /reviews/{reviewId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null;
@@ -56,7 +54,6 @@ service cloud.firestore {
     }
 
     // ── reports ───────────────────────────────────────────
-    // 登录用户可举报（创建），只有管理员可读（通过 Functions）
     match /reports/{repId} {
       allow create: if request.auth != null;
       allow read, update, delete: if false;
