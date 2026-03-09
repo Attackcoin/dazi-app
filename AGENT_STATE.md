@@ -28,24 +28,35 @@
 
 ## Next Tasks
 
-### 🔴 YOU (Manual Steps Required) — Phase 1 Environment Setup
-These require logging into external websites — cannot be automated:
-1. Go to https://firebase.google.com → Create 3 projects: `dazi-dev`, `dazi-staging`, `dazi-prod`
-2. In each project, enable: Auth (Phone+Google+Apple) / Firestore / Realtime DB / Functions (Blaze plan) / Storage / FCM
-3. Go to https://flutterflow.io → Register → Upgrade to Pro ($30/mo) → New Project → Connect to `dazi-dev`
-4. Go to https://console.cloud.google.com → Enable Maps SDK (Android+iOS) + Places API → Get API Key
-5. Go to https://console.anthropic.com → Get Claude API Key → Add $5 credit
-6. Go to https://www.algolia.com → Register → Create app `dazi-search` → Note App ID + Admin Key
-7. After Firebase created: run `firebase login` then `firebase use dazi-dev` in the `dazi-app` folder
-8. Deploy Security Rules: `firebase deploy --only firestore:rules,firestore:indexes`
-9. Deploy Functions: `cd functions && npm install` then `firebase deploy --only functions --project dazi-dev`
-10. Set env vars: `firebase functions:config:set claude.api_key="YOUR_KEY"` (repeat for all keys in env.example)
+### ✅ Completed This Session
+- Firebase CLI installed (v15.9.0)
+- `firebase login` completed
+- `firebase init` run: Firestore + Functions + Emulators configured
+- `functions/` dependencies installed (`npm install`)
+- All 20 Cloud Functions deployed to `dazi-dev` ✅
+- Firestore Security Rules deployed ✅
+- Firestore Indexes deployed ✅
+- Claude API Key set in `functions/.env`
 
-### ⬅️ CLAUDE — Phase 3 Core Pages (Next Code Task)
-Once Firebase is set up, Claude will generate:
-- FlutterFlow page specs + custom code for: Login, Onboarding (5 steps), 广场 (square), Post creation with voice AI, Chat, Profile
-- Algolia search integration code
-- Share + H5 landing page
+### 🔴 YOU — Next Manual Step
+**Connect FlutterFlow to Firebase:**
+1. Open https://flutterflow.io → your project
+2. Left menu → Settings → Firebase → Connect Firebase
+3. Select `dazi-dev`
+4. Download and upload `google-services.json` (Android) + `GoogleService-Info.plist` (iOS)
+
+**Also still needed (can do later):**
+- Google Maps API Key → https://console.cloud.google.com
+- Algolia account → https://www.algolia.com → create app `dazi-search`
+- Fill remaining keys in `functions/.env`: ALGOLIA_APP_ID, ALGOLIA_ADMIN_KEY
+
+### ⬅️ CLAUDE — Next Code Task (Phase 3: FlutterFlow Custom Code)
+Once FlutterFlow is connected to Firebase, Claude will write:
+- Custom Action: `callParseVoicePost` — calls deployed Firebase Function for voice AI publishing
+- Custom Action: `calculateMatchScore` — local Dart algorithm for match % display
+- Custom Action: `compressAndUploadImage` — client-side compression before Firebase Storage upload
+- Custom Widget: `GenderQuotaBar` — real-time male/female slot progress bar
+- Then: page-by-page build guide (Login → Onboarding → 广场 → Post → Chat → Profile)
 
 ---
 
