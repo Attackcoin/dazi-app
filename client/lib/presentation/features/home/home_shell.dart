@@ -23,11 +23,7 @@ class HomeShell extends StatelessWidget {
     return Scaffold(
       body: child,
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('发布页面待实现')),
-          );
-        },
+        onPressed: () => context.push('/post/create'),
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.bolt, color: Colors.white),
         label: const Text(

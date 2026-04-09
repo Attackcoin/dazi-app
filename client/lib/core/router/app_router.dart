@@ -7,6 +7,7 @@ import '../../presentation/features/auth/phone_verify_screen.dart';
 import '../../presentation/features/home/home_shell.dart';
 import '../../presentation/features/home/home_screen.dart';
 import '../../presentation/features/onboarding/onboarding_screen.dart';
+import '../../presentation/features/post/create_post_screen.dart';
 import '../../presentation/features/post/post_detail_screen.dart';
 import '../../presentation/features/profile/profile_screen.dart';
 import '../../presentation/features/splash/splash_screen.dart';
@@ -76,6 +77,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, __) => const ProfileScreen(),
           ),
         ],
+      ),
+      GoRoute(
+        path: '/post/create',
+        builder: (_, __) => const CreatePostScreen(),
       ),
       GoRoute(
         path: '/post/:id',
