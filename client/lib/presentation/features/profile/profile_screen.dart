@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/app_user.dart';
@@ -126,7 +127,7 @@ class _ProfileView extends ConsumerWidget {
                 _SettingItem(
                   icon: Icons.edit_outlined,
                   label: '编辑资料',
-                  onTap: () {},
+                  onTap: () => context.push('/settings/edit'),
                 ),
                 _SettingItem(
                   icon: Icons.favorite_border,
@@ -140,17 +141,17 @@ class _ProfileView extends ConsumerWidget {
                 _SettingItem(
                   icon: Icons.phone_outlined,
                   label: '紧急联系人',
-                  onTap: () {},
+                  onTap: () => context.push('/settings/emergency'),
                 ),
                 _SettingItem(
                   icon: Icons.notifications_outlined,
                   label: '通知设置',
-                  onTap: () {},
+                  onTap: () => context.push('/settings/notifications'),
                 ),
                 _SettingItem(
                   icon: Icons.lock_outline,
                   label: '隐私设置',
-                  onTap: () {},
+                  onTap: () => context.push('/settings/privacy'),
                 ),
                 const SizedBox(height: 16),
                 OutlinedButton(

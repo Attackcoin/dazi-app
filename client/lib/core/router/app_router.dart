@@ -12,6 +12,11 @@ import '../../presentation/features/messages/messages_screen.dart';
 import '../../presentation/features/onboarding/onboarding_screen.dart';
 import '../../presentation/features/post/create_post_screen.dart';
 import '../../presentation/features/post/post_detail_screen.dart';
+import '../../presentation/features/profile/blocked_users_screen.dart';
+import '../../presentation/features/profile/edit_profile_screen.dart';
+import '../../presentation/features/profile/emergency_contacts_screen.dart';
+import '../../presentation/features/profile/notifications_settings_screen.dart';
+import '../../presentation/features/profile/privacy_settings_screen.dart';
 import '../../presentation/features/profile/profile_screen.dart';
 import '../../presentation/features/review/recap_card_screen.dart';
 import '../../presentation/features/review/review_screen.dart';
@@ -106,6 +111,26 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/recap/:matchId',
         builder: (_, state) =>
             RecapCardScreen(matchId: state.pathParameters['matchId']!),
+      ),
+      GoRoute(
+        path: '/settings/edit',
+        builder: (_, __) => const EditProfileScreen(),
+      ),
+      GoRoute(
+        path: '/settings/emergency',
+        builder: (_, __) => const EmergencyContactsScreen(),
+      ),
+      GoRoute(
+        path: '/settings/notifications',
+        builder: (_, __) => const NotificationsSettingsScreen(),
+      ),
+      GoRoute(
+        path: '/settings/privacy',
+        builder: (_, __) => const PrivacySettingsScreen(),
+      ),
+      GoRoute(
+        path: '/settings/blocked',
+        builder: (_, __) => const BlockedUsersScreen(),
       ),
       GoRoute(
         path: '/post/create',
