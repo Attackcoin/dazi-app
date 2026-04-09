@@ -6,12 +6,14 @@ import '../../presentation/features/auth/login_screen.dart';
 import '../../presentation/features/auth/phone_verify_screen.dart';
 import '../../presentation/features/home/home_shell.dart';
 import '../../presentation/features/home/home_screen.dart';
+import '../../presentation/features/onboarding/onboarding_screen.dart';
 import '../../presentation/features/post/post_detail_screen.dart';
 import '../../presentation/features/profile/profile_screen.dart';
 import '../../presentation/features/splash/splash_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
+  final appUser = ref.watch(currentAppUserProvider);
 
   return GoRouter(
     initialLocation: '/splash',
@@ -19,18 +21,28 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final loggingIn = state.matchedLocation == '/login' ||
           state.matchedLocation == '/verify';
+      final isOnboarding = state.matchedLocation == '/onboarding';
       final isSplash = state.matchedLocation == '/splash';
 
-      return authState.when(
-        data: (user) {
-          if (isSplash) return user == null ? '/login' : '/';
-          if (user == null && !loggingIn) return '/login';
-          if (user != null && loggingIn) return '/';
-          return null;
-        },
-        loading: () => null,
-        error: (_, __) => '/login',
-      );
+      final user = authState.valueOrNull;
+      if (authState.isLoading) return null;
+
+      // 未登录
+      if (user == null) {
+        if (loggingIn) return null;
+        return '/login';
+      }
+
+      // 已登录 —— 检查资料是否填完（城市非空作为判断）
+      final profile = appUser.valueOrNull;
+      final profileIncomplete = profile != null &&
+          (profile.city.isEmpty || profile.birthYear == null);
+
+      if (profileIncomplete && !isOnboarding) return '/onboarding';
+      if (!profileIncomplete && (isOnboarding || loggingIn || isSplash)) {
+        return '/';
+      }
+      return null;
     },
     routes: [
       GoRoute(
@@ -47,6 +59,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           final phone = state.uri.queryParameters['phone'] ?? '';
           return PhoneVerifyScreen(phone: phone);
         },
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (_, __) => const OnboardingScreen(),
       ),
       ShellRoute(
         builder: (_, __, child) => HomeShell(child: child),
