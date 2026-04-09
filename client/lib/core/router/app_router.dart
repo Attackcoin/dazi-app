@@ -13,6 +13,8 @@ import '../../presentation/features/onboarding/onboarding_screen.dart';
 import '../../presentation/features/post/create_post_screen.dart';
 import '../../presentation/features/post/post_detail_screen.dart';
 import '../../presentation/features/profile/profile_screen.dart';
+import '../../presentation/features/review/recap_card_screen.dart';
+import '../../presentation/features/review/review_screen.dart';
 import '../../presentation/features/splash/splash_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -94,6 +96,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/checkin/:matchId',
         builder: (_, state) =>
             CheckinScreen(matchId: state.pathParameters['matchId']!),
+      ),
+      GoRoute(
+        path: '/review/:matchId',
+        builder: (_, state) =>
+            ReviewScreen(matchId: state.pathParameters['matchId']!),
+      ),
+      GoRoute(
+        path: '/recap/:matchId',
+        builder: (_, state) =>
+            RecapCardScreen(matchId: state.pathParameters['matchId']!),
       ),
       GoRoute(
         path: '/post/create',

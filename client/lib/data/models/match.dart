@@ -19,6 +19,7 @@ class AppMatch {
   final List<String> checkedIn;
   final bool checkinWindowOpen;
   final DateTime? checkinWindowExpiresAt;
+  final RecapCard? recapCard;
 
   const AppMatch({
     required this.id,
@@ -36,6 +37,7 @@ class AppMatch {
     required this.checkedIn,
     required this.checkinWindowOpen,
     required this.checkinWindowExpiresAt,
+    required this.recapCard,
   });
 
   bool hasCheckedIn(String uid) => checkedIn.contains(uid);
@@ -82,8 +84,39 @@ class AppMatch {
       checkinWindowOpen: data['checkinWindowOpen'] as bool? ?? false,
       checkinWindowExpiresAt:
           (data['checkinWindowExpiresAt'] as Timestamp?)?.toDate(),
+      recapCard: data['recapCard'] is Map<String, dynamic>
+          ? RecapCard.fromMap(data['recapCard'] as Map<String, dynamic>)
+          : null,
     );
   }
+}
+
+/// AI 生成的活动回忆卡 —— 后端 `generateRecapCard` 写入 match.recapCard。
+class RecapCard {
+  final String summary;
+  final String activity;
+  final String location;
+  final int participants;
+  final int? duration;
+  final DateTime? generatedAt;
+
+  const RecapCard({
+    required this.summary,
+    required this.activity,
+    required this.location,
+    required this.participants,
+    required this.duration,
+    required this.generatedAt,
+  });
+
+  factory RecapCard.fromMap(Map<String, dynamic> m) => RecapCard(
+        summary: m['summary'] as String? ?? '',
+        activity: m['activity'] as String? ?? '',
+        location: m['location'] as String? ?? '',
+        participants: (m['participants'] as num?)?.toInt() ?? 0,
+        duration: (m['duration'] as num?)?.toInt(),
+        generatedAt: (m['generatedAt'] as Timestamp?)?.toDate(),
+      );
 }
 
 class MatchParticipant {

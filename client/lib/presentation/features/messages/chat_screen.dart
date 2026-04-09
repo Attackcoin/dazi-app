@@ -177,9 +177,50 @@ class _MeetupBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (match.postTime == null) return const SizedBox.shrink();
-    final time = match.postTime!;
-    final isToday = DateUtils.isSameDay(time, DateTime.now());
+    final time = match.postTime;
+    final isCompleted = match.status == MatchStatus.completed;
+    final isToday = time != null && DateUtils.isSameDay(time, DateTime.now());
+
+    // 已完成：显示「写评价」入口
+    if (isCompleted) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        color: AppColors.primary.withValues(alpha: 0.08),
+        child: Row(
+          children: [
+            const Icon(Icons.celebration,
+                size: 16, color: AppColors.primary),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text(
+                '搭子已完成，记得写评价 & 看回忆卡',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => context.push('/review/${match.id}'),
+              style: TextButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text(
+                '写评价',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (time == null) return const SizedBox.shrink();
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
