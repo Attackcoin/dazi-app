@@ -18,6 +18,26 @@
       "source": "functions"
     }
   ],
+  "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      { "source": "/p/**", "destination": "/post.html" },
+      { "source": "/post/**", "destination": "/post.html" }
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(html|js|css)",
+        "headers": [
+          { "key": "Cache-Control", "value": "max-age=3600" }
+        ]
+      }
+    ]
+  },
   "emulators": {
     "auth": {
       "port": 9099

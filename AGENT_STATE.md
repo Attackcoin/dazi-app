@@ -13,6 +13,17 @@
 - ✅ GitHub repo created and all files pushed → https://github.com/Attackcoin/dazi-app
 - ✅ AGENT_STATE.md created
 
+### [2026-04-09] H5 落地页 + Algolia 同步 + API 申请清单
+- ✅ `public/index.html` — App 下载/介绍页（支持 UA 自动匹配平台按钮）
+- ✅ `public/post.html` — 帖子分享页（通过 Firestore Web SDK 读取帖子数据）
+- ✅ `public/privacy.html` — 隐私政策（App Store 审核必须）
+- ✅ `public/terms.html` — 用户协议
+- ✅ `firebase.json` — 新增 hosting 配置，`/p/:id` 路由到 post.html
+- ✅ `functions/src/algoliaSync.js` — Firestore → Algolia 自动同步 + 全量回填 HTTP 函数
+- ✅ `functions/package.json` — 添加 `algoliasearch` 依赖
+- ✅ `docs/setup/api-keys-checklist.md` — 所有第三方 API 申请指南
+- ✅ `docs/setup/hosting-deploy.md` — H5 部署步骤
+
 ### [2026-03-08] Firebase Backend Code
 - ✅ `functions/src/ai.js` — All Claude Haiku integrations (voice parse, description, icebreakers, recap card, monthly report)
 - ✅ `functions/src/antiGhosting.js` — Check-in window, GPS validation, ghost count, badge awards
@@ -51,10 +62,15 @@
 
 **方案 B：换其他前端工具（开发周期会大幅延长，不推荐）**
 
-**Also still needed (can do later):**
+**仍需用户手动申请**（详见 `docs/setup/api-keys-checklist.md`）:
 - Google Maps API Key → https://console.cloud.google.com
-- Algolia account → https://www.algolia.com → create app `dazi-search`
-- Fill remaining keys in `functions/.env`: ALGOLIA_APP_ID, ALGOLIA_ADMIN_KEY
+- Algolia account → https://www.algolia.com → create index `posts`
+- 填写 `functions/.env`: ALGOLIA_APP_ID / ALGOLIA_ADMIN_KEY
+- （付费/后期）阿里云实人认证、微信支付、支付宝
+
+**可立即部署**：
+- `firebase deploy --only hosting` → H5 页面上线（需先替换 post.html 中的 firebaseConfig）
+- `firebase deploy --only functions:syncPostToAlgolia` → 配置 Algolia 密钥后部署同步函数
 
 ### ⬅️ CLAUDE — Next Code Task (Phase 3: FlutterFlow Custom Code)
 Once FlutterFlow is connected to Firebase, Claude will write:

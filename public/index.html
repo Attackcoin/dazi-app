@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>搭子 — 找个人一起出发</title>
+<meta name="description" content="搭子App：在你所在的城市，找个志同道合的人一起吃饭、看展、爬山、玩桌游。">
+<meta property="og:title" content="搭子 — 找个人一起出发">
+<meta property="og:description" content="在你的城市，找到下一个搭子。">
+<meta property="og:type" content="website">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: #fff; color: #1a1a1a; line-height: 1.6; }
+.hero {
+  min-height: 100vh;
+  background: linear-gradient(160deg, #ff8a65 0%, #ff6b9d 50%, #a855f7 100%);
+  color: #fff;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 60px 24px 40px; text-align: center; position: relative;
+}
+.logo { font-size: 48px; font-weight: 800; letter-spacing: 2px; margin-bottom: 8px; text-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+.tagline { font-size: 18px; opacity: 0.95; margin-bottom: 48px; font-weight: 300; }
+.illustration { font-size: 80px; margin: 24px 0 48px; }
+.features { display: grid; gap: 16px; width: 100%; max-width: 360px; margin-bottom: 40px; }
+.feature {
+  background: rgba(255,255,255,0.18);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 16px;
+  padding: 16px 20px;
+  text-align: left;
+  display: flex; align-items: center; gap: 14px;
+}
+.feature-icon { font-size: 28px; }
+.feature-text { flex: 1; }
+.feature-title { font-weight: 600; font-size: 15px; margin-bottom: 2px; }
+.feature-desc { font-size: 13px; opacity: 0.85; }
+.cta-group { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 320px; }
+.btn {
+  display: block; width: 100%;
+  padding: 16px 32px;
+  border-radius: 999px;
+  font-size: 16px; font-weight: 600;
+  text-decoration: none; text-align: center;
+  transition: transform 0.15s, box-shadow 0.15s;
+  cursor: pointer; border: none;
+}
+.btn-primary { background: #fff; color: #ff6b9d; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+.btn-primary:active { transform: scale(0.97); }
+.btn-secondary { background: rgba(255,255,255,0.2); color: #fff; border: 1.5px solid rgba(255,255,255,0.4); }
+.footer { padding: 24px; text-align: center; color: #888; font-size: 12px; background: #fafafa; }
+.footer a { color: #888; text-decoration: none; margin: 0 8px; }
+@media (min-width: 768px) {
+  .logo { font-size: 64px; }
+  .tagline { font-size: 22px; }
+  .illustration { font-size: 120px; }
+}
+</style>
+</head>
+<body>
+<main class="hero">
+  <div class="logo">搭子</div>
+  <div class="tagline">找个人，一起出发</div>
+  <div class="illustration">🤝</div>
+  <div class="features">
+    <div class="feature">
+      <div class="feature-icon">🎯</div>
+      <div class="feature-text">
+        <div class="feature-title">AI 智能匹配</div>
+        <div class="feature-desc">兴趣相投才约得起来</div>
+      </div>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🛡️</div>
+      <div class="feature-text">
+        <div class="feature-title">反鸽子机制</div>
+        <div class="feature-desc">押金+签到，不放鸽子</div>
+      </div>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🎤</div>
+      <div class="feature-text">
+        <div class="feature-title">语音发布</div>
+        <div class="feature-desc">说一句话就能约人</div>
+      </div>
+    </div>
+  </div>
+  <div class="cta-group">
+    <a href="#" class="btn btn-primary" id="iosBtn">下载 iOS 版</a>
+    <a href="#" class="btn btn-secondary" id="androidBtn">下载 Android 版</a>
+  </div>
+</main>
+<footer class="footer">
+  <div>© 2026 搭子 App · 让每次见面都值得</div>
+  <div style="margin-top: 8px;">
+    <a href="/privacy.html">隐私政策</a>·
+    <a href="/terms.html">用户协议</a>·
+    <a href="mailto:hello@dazi.app">联系我们</a>
+  </div>
+</footer>
+<script>
+// 简单的 UA 检测，优先显示对应平台按钮
+(function() {
+  var ua = navigator.userAgent.toLowerCase();
+  var iosBtn = document.getElementById('iosBtn');
+  var androidBtn = document.getElementById('androidBtn');
+  if (/iphone|ipad|ipod/.test(ua)) {
+    androidBtn.style.display = 'none';
+  } else if (/android/.test(ua)) {
+    iosBtn.style.display = 'none';
+  }
+  // TODO: 替换为真实的 App Store / Google Play 链接
+  iosBtn.href = 'https://apps.apple.com/app/dazi';
+  androidBtn.href = 'https://play.google.com/store/apps/details?id=app.dazi';
+})();
+</script>
+</body>
+</html>

@@ -13,4 +13,5 @@ module.exports = {
   ...require('./applications'),
   ...require('./deposits'),
   ...require('./notifications'),
+  ...require('./algoliaSync'),
 };

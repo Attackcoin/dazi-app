@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>搭子活动分享 · 搭子</title>
+<meta name="description" content="有人在搭子 App 上发起了一场活动，一起去吗？">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f5f5f7; color: #1a1a1a; line-height: 1.6; min-height: 100vh; }
+.container { max-width: 480px; margin: 0 auto; background: #fff; min-height: 100vh; box-shadow: 0 0 40px rgba(0,0,0,0.04); }
+.loading, .error { padding: 80px 24px; text-align: center; color: #666; }
+.spinner { width: 32px; height: 32px; border: 3px solid #f0f0f0; border-top-color: #ff6b9d; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.hero-img { width: 100%; aspect-ratio: 16/10; background: linear-gradient(135deg, #ff8a65, #ff6b9d); object-fit: cover; display: block; }
+.content { padding: 24px 20px 120px; }
+.category-tag { display: inline-block; background: #fff0f3; color: #ff6b9d; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; margin-bottom: 12px; }
+.title { font-size: 22px; font-weight: 700; margin-bottom: 16px; line-height: 1.35; }
+.meta { display: grid; gap: 12px; margin-bottom: 20px; padding: 16px; background: #fafafa; border-radius: 12px; }
+.meta-row { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #333; }
+.meta-icon { font-size: 18px; width: 24px; text-align: center; }
+.slots { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.slots-bar { flex: 1; height: 8px; background: #f0f0f0; border-radius: 4px; overflow: hidden; }
+.slots-fill { height: 100%; background: linear-gradient(90deg, #ff8a65, #ff6b9d); border-radius: 4px; }
+.slots-text { font-size: 13px; color: #666; font-weight: 500; }
+.description { font-size: 15px; color: #444; white-space: pre-wrap; margin-bottom: 24px; }
+.host { display: flex; align-items: center; gap: 12px; padding: 16px; background: #fafafa; border-radius: 12px; margin-bottom: 24px; }
+.host-avatar { width: 48px; height: 48px; border-radius: 50%; background: #eee; object-fit: cover; }
+.host-info { flex: 1; }
+.host-name { font-weight: 600; font-size: 15px; }
+.host-stats { font-size: 12px; color: #888; }
+.cta-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  padding: 16px 20px; background: #fff;
+  border-top: 1px solid #f0f0f0;
+  max-width: 480px; margin: 0 auto;
+  display: flex; gap: 12px;
+}
+.btn { flex: 1; padding: 14px; border-radius: 999px; font-size: 15px; font-weight: 600; text-align: center; text-decoration: none; border: none; cursor: pointer; }
+.btn-primary { background: linear-gradient(135deg, #ff8a65, #ff6b9d); color: #fff; }
+.btn-secondary { background: #f5f5f7; color: #333; }
+.app-banner { position: sticky; top: 0; z-index: 10; background: #1a1a1a; color: #fff; padding: 10px 20px; display: flex; align-items: center; gap: 12px; font-size: 13px; }
+.app-banner-text { flex: 1; }
+.app-banner-btn { background: #ff6b9d; color: #fff; padding: 6px 14px; border-radius: 999px; font-weight: 600; text-decoration: none; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="app-banner">
+    <span>🤝</span>
+    <span class="app-banner-text">打开搭子 App 查看完整内容</span>
+    <a href="#" class="app-banner-btn" id="openAppBtn">打开</a>
+  </div>
+  <div id="root">
+    <div class="loading">
+      <div class="spinner"></div>
+      <div>加载中...</div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+// Firebase Web 配置 — 部署时替换为真实配置
+const firebaseConfig = {
+  apiKey: "REPLACE_ME",
+  authDomain: "dazi-dev.firebaseapp.com",
+  projectId: "dazi-dev",
+  storageBucket: "dazi-dev.appspot.com",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+function getPostId() {
+  var params = new URLSearchParams(location.search);
+  return params.get('id') || location.pathname.split('/').filter(Boolean).pop();
+}
+
+function formatTime(ts) {
+  if (!ts) return '待定';
+  var d = ts.toDate ? ts.toDate() : new Date(ts);
+  var M = d.getMonth() + 1, D = d.getDate(), h = d.getHours(), m = d.getMinutes();
+  return M + '月' + D + '日 ' + h + ':' + (m < 10 ? '0' + m : m);
+}
+
+function render(post) {
+  var root = document.getElementById('root');
+  if (!post) {
+    root.innerHTML = '<div class="error"><div style="font-size: 48px; margin-bottom: 16px;">😕</div><div>活动不存在或已结束</div></div>';
+    return;
+  }
+  var img = (post.images && post.images[0]) || '';
+  var total = post.totalSlots || 0;
+  var accepted = ((post.acceptedGender && post.acceptedGender.male) || 0) + ((post.acceptedGender && post.acceptedGender.female) || 0);
+  var pct = total > 0 ? Math.min(100, (accepted / total) * 100) : 0;
+  var costMap = { aa: 'AA 制', host: '发起人请客', self: '各付各的', tbd: '见面协商' };
+
+  root.innerHTML =
+    (img ? '<img class="hero-img" src="' + img + '" alt="">' : '<div class="hero-img"></div>') +
+    '<div class="content">' +
+      '<div class="category-tag">' + (post.category || '活动') + '</div>' +
+      '<div class="title">' + (post.title || '') + '</div>' +
+      '<div class="meta">' +
+        '<div class="meta-row"><span class="meta-icon">📅</span><span>' + formatTime(post.time) + '</span></div>' +
+        '<div class="meta-row"><span class="meta-icon">📍</span><span>' + ((post.location && post.location.name) || '待定') + '</span></div>' +
+        '<div class="meta-row"><span class="meta-icon">💰</span><span>' + (costMap[post.costType] || '待定') + (post.depositAmount ? ' · 押金 ¥' + post.depositAmount : '') + '</span></div>' +
+      '</div>' +
+      '<div class="slots">' +
+        '<div class="slots-bar"><div class="slots-fill" style="width:' + pct + '%"></div></div>' +
+        '<div class="slots-text">' + accepted + '/' + total + ' 人</div>' +
+      '</div>' +
+      '<div class="description">' + (post.description || '') + '</div>' +
+    '</div>' +
+    '<div class="cta-bar">' +
+      '<a class="btn btn-secondary" href="/">了解搭子</a>' +
+      '<a class="btn btn-primary" href="dazi://post/' + getPostId() + '" id="joinBtn">立即参加</a>' +
+    '</div>';
+}
+
+async function load() {
+  var id = getPostId();
+  if (!id) { render(null); return; }
+  try {
+    var snap = await getDoc(doc(db, 'posts', id));
+    if (!snap.exists()) { render(null); return; }
+    render(snap.data());
+    // 尝试拉起 App；失败则跳转到下载页
+    setTimeout(function() {
+      document.getElementById('openAppBtn').href = 'dazi://post/' + id;
+    }, 500);
+  } catch (e) {
+    console.error(e);
+    render(null);
+  }
+}
+load();
+</script>
+</body>
+</html>
