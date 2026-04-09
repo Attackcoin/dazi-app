@@ -86,12 +86,21 @@ exports.submitCheckin = functions
     }
 
     // GPS 验证（误差 < 500m 视为有效）
+    // 仅当客户端传入坐标 AND 帖子本身保存了坐标时才做距离验证，
+    // 否则退化为"信任签到"（见 create_post_screen TODO：Maps picker 未接入前无坐标）。
     if (lat && lng) {
       const postDoc = await db.collection('posts').doc(match.postId).get();
       const post = postDoc.data();
-      const distance = _calcDistance(lat, lng, post.location.lat, post.location.lng);
-      if (distance > 500) {
-        throw new functions.https.HttpsError('out-of-range', `距离活动地点 ${Math.round(distance)}m，需在 500m 内才能签到`);
+      const postLat = post.location && post.location.lat;
+      const postLng = post.location && post.location.lng;
+      if (typeof postLat === 'number' && typeof postLng === 'number') {
+        const distance = _calcDistance(lat, lng, postLat, postLng);
+        if (distance > 500) {
+          throw new functions.https.HttpsError(
+            'out-of-range',
+            `距离活动地点 ${Math.round(distance)}m，需在 500m 内才能签到`
+          );
+        }
       }
     }
 

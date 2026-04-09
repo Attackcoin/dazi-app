@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/user_repository.dart';
 
 /// 隐私设置 —— 展示粒度开关 + 黑名单入口。
@@ -22,6 +23,7 @@ class _PrivacySettingsScreenState
     'allowSearchByPhone': false,
     'hideFromNearby': false,
   };
+  bool _initialized = false;
   bool _saving = false;
 
   static const _items = [
@@ -51,6 +53,14 @@ class _PrivacySettingsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final user = ref.watch(currentAppUserProvider).valueOrNull;
+    if (user != null && !_initialized) {
+      for (final entry in user.privacyPrefs.entries) {
+        _prefs[entry.key] = entry.value;
+      }
+      _initialized = true;
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('隐私设置'),

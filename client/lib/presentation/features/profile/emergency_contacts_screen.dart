@@ -63,8 +63,9 @@ class _EmergencyContactsScreenState
     final user = userAsync.valueOrNull;
 
     if (user != null && !_initialized) {
-      // AppUser 模型暂未包含 emergencyContacts 字段，这里直接走 Firestore 原始 map。
-      // TODO: 后续在 AppUser 中添加该字段。
+      _contacts
+        ..clear()
+        ..addAll(user.emergencyContacts.map((m) => Map<String, String>.from(m)));
       _initialized = true;
     }
 

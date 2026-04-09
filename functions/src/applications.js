@@ -117,9 +117,13 @@ exports.acceptApplication = functions
         throw new functions.https.HttpsError('permission-denied', '只有发布者可以接受申请');
       }
 
-      // 获取申请者信息（用于更新性别统计）
-      const applicantDoc = await tx.get(db.collection('users').doc(app.applicantId));
+      // 获取申请者 + 发布者信息（用于性别统计 + 冗余写入 match 文档）
+      const [applicantDoc, ownerDoc] = await Promise.all([
+        tx.get(db.collection('users').doc(app.applicantId)),
+        tx.get(db.collection('users').doc(post.userId)),
+      ]);
       const applicant = applicantDoc.data();
+      const owner = ownerDoc.data() || {};
       const genderKey = applicant.gender === 'female' ? 'female' : 'male';
 
       // 更新申请状态
@@ -137,16 +141,33 @@ exports.acceptApplication = functions
       }
 
       // 创建 match 记录（触发聊天室开启）
+      // 冗余写入 postTitle / postCategory / participantInfo，避免前端再做 join。
       const matchRef = db.collection('matches').doc();
       tx.set(matchRef, {
         postId: app.postId,
         chatId: matchRef.id, // chat ID 与 match ID 相同，简化架构
         participants: [post.userId, app.applicantId],
+        participantInfo: {
+          [post.userId]: {
+            uid: post.userId,
+            name: owner.name || '',
+            avatar: owner.avatar || '',
+          },
+          [app.applicantId]: {
+            uid: app.applicantId,
+            name: applicant.name || '',
+            avatar: applicant.avatar || '',
+          },
+        },
+        postTitle: post.title || '',
+        postCategory: post.category || '',
         checkedIn: [],
         checkinWindowOpen: false,
         depositStatus: post.depositAmount > 0 ? 'pending' : 'none',
         status: 'confirmed',
         meetTime: post.time,
+        lastMessageAt: admin.firestore.FieldValue.serverTimestamp(),
+        lastMessagePreview: '',
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 

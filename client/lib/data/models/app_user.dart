@@ -20,6 +20,9 @@ class AppUser {
   final List<String> badges;
   final String city;
   final List<String> blockedUsers;
+  final List<Map<String, String>> emergencyContacts;
+  final Map<String, bool> notificationsPrefs;
+  final Map<String, bool> privacyPrefs;
   final DateTime? createdAt;
   final DateTime? lastActive;
 
@@ -42,6 +45,9 @@ class AppUser {
     required this.badges,
     required this.city,
     required this.blockedUsers,
+    this.emergencyContacts = const [],
+    this.notificationsPrefs = const {},
+    this.privacyPrefs = const {},
     required this.createdAt,
     required this.lastActive,
   });
@@ -75,6 +81,15 @@ class AppUser {
       city: data['city'] as String? ?? '',
       blockedUsers:
           (data['blockedUsers'] as List<dynamic>?)?.cast<String>() ?? const [],
+      emergencyContacts: ((data['emergencyContacts'] as List<dynamic>?) ?? const [])
+          .whereType<Map<dynamic, dynamic>>()
+          .map((m) => m.map((k, v) => MapEntry(k.toString(), v?.toString() ?? '')))
+          .toList(),
+      notificationsPrefs:
+          ((data['notificationsPrefs'] as Map<dynamic, dynamic>?) ?? const {})
+              .map((k, v) => MapEntry(k.toString(), v == true)),
+      privacyPrefs: ((data['privacyPrefs'] as Map<dynamic, dynamic>?) ?? const {})
+          .map((k, v) => MapEntry(k.toString(), v == true)),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
       lastActive: (data['lastActive'] as Timestamp?)?.toDate(),
     );

@@ -31,11 +31,17 @@ service cloud.firestore {
     }
 
     // ── matches ───────────────────────────────────────────
-    // 参与者才能读取，写入由 Cloud Functions 负责
+    // 参与者才能读取；写入由 Cloud Functions 负责，
+    // 唯一例外：参与者可以更新 lastMessageAt / lastMessagePreview
+    // 这两个字段（聊天发消息时同步，由前端直写以避免一次 Cloud Function 往返）
     match /matches/{matchId} {
       allow read: if request.auth != null &&
         request.auth.uid in resource.data.participants;
-      allow write: if false;
+      allow update: if request.auth != null
+        && request.auth.uid in resource.data.participants
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['lastMessageAt', 'lastMessagePreview']);
+      allow create, delete: if false;
     }
 
     // ── deposits ──────────────────────────────────────────

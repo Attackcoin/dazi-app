@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/user_repository.dart';
 
 /// 通知设置 —— 开关各类推送。
@@ -23,6 +24,7 @@ class _NotificationsSettingsScreenState
     'reviewReceived': true,
     'systemAnnouncement': true,
   };
+  bool _initialized = false;
   bool _saving = false;
 
   static const _items = [
@@ -54,6 +56,14 @@ class _NotificationsSettingsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final user = ref.watch(currentAppUserProvider).valueOrNull;
+    if (user != null && !_initialized) {
+      for (final entry in user.notificationsPrefs.entries) {
+        _prefs[entry.key] = entry.value;
+      }
+      _initialized = true;
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('通知设置'),
