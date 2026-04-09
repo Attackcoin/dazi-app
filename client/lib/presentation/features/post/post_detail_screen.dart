@@ -5,8 +5,13 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../data/models/application.dart';
 import '../../../data/models/post.dart';
+import '../../../data/repositories/application_repository.dart';
+import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/post_repository.dart';
+import 'widgets/application_list_sheet.dart';
+import 'widgets/apply_sheet.dart';
 
 class PostDetailScreen extends ConsumerWidget {
   const PostDetailScreen({super.key, required this.postId});
@@ -19,13 +24,14 @@ class PostDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       body: postAsync.when(
-        data: (post) => post == null ? _notFound(context) : _buildContent(context, post),
+        data: (post) =>
+            post == null ? _notFound(context) : _buildContent(context, post),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('加载失败：$e')),
       ),
       bottomNavigationBar: postAsync.valueOrNull == null
           ? null
-          : _buildBottomBar(context, postAsync.value!),
+          : _BottomBar(post: postAsync.value!),
     );
   }
 
@@ -191,8 +197,19 @@ class PostDetailScreen extends ConsumerWidget {
       ],
     );
   }
+}
 
-  Widget _buildBottomBar(BuildContext context, Post post) {
+/// 底部操作栏 —— 根据用户身份（作者/申请者）切换按钮。
+class _BottomBar extends ConsumerWidget {
+  const _BottomBar({required this.post});
+
+  final Post post;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final uid = ref.watch(authStateProvider).valueOrNull?.uid;
+    final isOwner = uid != null && uid == post.userId;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
       decoration: const BoxDecoration(
@@ -201,27 +218,84 @@ class PostDetailScreen extends ConsumerWidget {
       ),
       child: SafeArea(
         top: false,
-        child: Row(
-          children: [
-            IconButton.outlined(
-              onPressed: () {},
-              icon: const Icon(Icons.favorite_border),
-              style: IconButton.styleFrom(
-                side: const BorderSide(color: AppColors.border),
-                shape: const CircleBorder(),
-                padding: const EdgeInsets.all(14),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: post.isFull ? null : () {},
-                child: Text(post.isFull ? '加入候补' : '立即申请'),
-              ),
-            ),
-          ],
-        ),
+        child: isOwner
+            ? _OwnerButton(postId: post.id)
+            : _ApplicantButtons(post: post),
       ),
     );
+  }
+}
+
+class _OwnerButton extends StatelessWidget {
+  const _OwnerButton({required this.postId});
+
+  final String postId;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: () => showApplicationListSheet(context, postId),
+        icon: const Icon(Icons.list_alt, size: 20),
+        label: const Text('查看申请列表'),
+      ),
+    );
+  }
+}
+
+class _ApplicantButtons extends ConsumerWidget {
+  const _ApplicantButtons({required this.post});
+
+  final Post post;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final myAppAsync = ref.watch(myApplicationForPostProvider(post.id));
+    final existing = myAppAsync.valueOrNull;
+
+    String label;
+    bool enabled;
+
+    if (existing != null && existing.status.isActive) {
+      label = '已申请 · ${existing.status.label}';
+      enabled = false;
+    } else if (post.isFull) {
+      label = '加入候补';
+      enabled = true;
+    } else {
+      label = '立即申请';
+      enabled = true;
+    }
+
+    return Row(
+      children: [
+        IconButton.outlined(
+          onPressed: () {},
+          icon: const Icon(Icons.favorite_border),
+          style: IconButton.styleFrom(
+            side: const BorderSide(color: AppColors.border),
+            shape: const CircleBorder(),
+            padding: const EdgeInsets.all(14),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: enabled ? () => _handleApply(context, ref) : null,
+            child: Text(label),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handleApply(BuildContext context, WidgetRef ref) async {
+    final result = await showApplySheet(context, post);
+    if (result == null || !context.mounted) return;
+    final msg = result.status == ApplicationStatus.waitlisted
+        ? '已加入候补名单 ⏳'
+        : '申请已发出，等待发布者回应 🎉';
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 }
