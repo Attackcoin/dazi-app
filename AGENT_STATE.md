@@ -13,6 +13,19 @@
 - ✅ GitHub repo created and all files pushed → https://github.com/Attackcoin/dazi-app
 - ✅ AGENT_STATE.md created
 
+### [2026-04-09] Flutter 前端脚手架（放弃 FlutterFlow 转纯 Flutter）
+- ✅ `client/` — Flutter 项目脚手架（Android + iOS 平台）
+- ✅ `pubspec.yaml` — 依赖：riverpod、go_router、firebase_*、cached_network_image 等
+- ✅ `lib/core/theme/` — 品牌色系 + Material 3 主题（与 H5 落地页一致）
+- ✅ `lib/core/router/app_router.dart` — go_router + 鉴权守卫
+- ✅ `lib/data/models/` — Post、AppUser 模型（Firestore 序列化）
+- ✅ `lib/data/repositories/auth_repository.dart` — 手机号登录（verifyPhoneNumber + 自动建档）
+- ✅ `lib/data/repositories/post_repository.dart` — 广场 feed stream、帖子详情 stream
+- ✅ Splash / Login / PhoneVerify / Home（广场+分类）/ HomeShell（底部导航）/ PostDetail / Profile
+- ✅ `flutter analyze` 零错误零警告
+- ✅ `client/README.md` — 首次运行指南
+- ⚠️ `firebase_options.dart` 是占位文件，运行前必须执行 `flutterfire configure --project=dazi-dev`
+
 ### [2026-04-09] H5 落地页 + Algolia 同步 + API 申请清单
 - ✅ `public/index.html` — App 下载/介绍页（支持 UA 自动匹配平台按钮）
 - ✅ `public/post.html` — 帖子分享页（通过 Firestore Web SDK 读取帖子数据）
@@ -86,7 +99,7 @@ Once FlutterFlow is connected to Firebase, Claude will write:
 
 | Decision | Choice | Reason |
 |----------|--------|--------|
-| Frontend | FlutterFlow | Non-technical founder, iOS+Android from one codebase |
+| Frontend | ~~FlutterFlow~~ → **纯 Flutter** (2026-04-09) | FlutterFlow 免费版不能连 Firebase，Claude Code 可直接写 Dart |
 | Backend | Firebase | Integrated auth/db/functions/push, fast iteration |
 | Chat DB | Firebase Realtime Database | Low-latency for real-time messages |
 | Main DB | Firestore | Flexible queries for all other data |
