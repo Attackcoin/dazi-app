@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../presentation/features/auth/login_screen.dart';
 import '../../presentation/features/auth/phone_verify_screen.dart';
+import '../../presentation/features/checkin/checkin_screen.dart';
 import '../../presentation/features/home/home_shell.dart';
 import '../../presentation/features/home/home_screen.dart';
 import '../../presentation/features/messages/chat_screen.dart';
@@ -88,6 +89,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/chat/:chatId',
         builder: (_, state) =>
             ChatScreen(chatId: state.pathParameters['chatId']!),
+      ),
+      GoRoute(
+        path: '/checkin/:matchId',
+        builder: (_, state) =>
+            CheckinScreen(matchId: state.pathParameters['matchId']!),
       ),
       GoRoute(
         path: '/post/create',

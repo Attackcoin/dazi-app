@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -198,11 +199,7 @@ class _MeetupBanner extends StatelessWidget {
           ),
           if (isToday)
             TextButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('签到功能待接入 Step 5')),
-                );
-              },
+              onPressed: () => context.push('/checkin/${match.id}'),
               style: TextButton.styleFrom(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 4),

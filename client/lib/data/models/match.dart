@@ -16,6 +16,9 @@ class AppMatch {
   final DateTime? createdAt;
   final DateTime? lastMessageAt;
   final String? lastMessagePreview;
+  final List<String> checkedIn;
+  final bool checkinWindowOpen;
+  final DateTime? checkinWindowExpiresAt;
 
   const AppMatch({
     required this.id,
@@ -30,7 +33,14 @@ class AppMatch {
     required this.createdAt,
     required this.lastMessageAt,
     required this.lastMessagePreview,
+    required this.checkedIn,
+    required this.checkinWindowOpen,
+    required this.checkinWindowExpiresAt,
   });
+
+  bool hasCheckedIn(String uid) => checkedIn.contains(uid);
+  bool get allCheckedIn =>
+      participants.isNotEmpty && participants.every(checkedIn.contains);
 
   /// 在双人匹配中返回「对方」的信息。
   MatchParticipant? otherOf(String myUid) {
@@ -56,7 +66,9 @@ class AppMatch {
       postId: data['postId'] as String? ?? '',
       postTitle: data['postTitle'] as String? ?? '',
       postCategory: data['postCategory'] as String? ?? '',
-      postTime: (data['postTime'] as Timestamp?)?.toDate(),
+      // 后端 acceptApplication 写入 `meetTime` 字段；兼容 `postTime` 作为回退。
+      postTime: (data['meetTime'] as Timestamp?)?.toDate() ??
+          (data['postTime'] as Timestamp?)?.toDate(),
       chatId: data['chatId'] as String? ?? doc.id,
       participants:
           (data['participants'] as List<dynamic>?)?.cast<String>() ?? const [],
@@ -65,6 +77,11 @@ class AppMatch {
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
       lastMessageAt: (data['lastMessageAt'] as Timestamp?)?.toDate(),
       lastMessagePreview: data['lastMessagePreview'] as String?,
+      checkedIn:
+          (data['checkedIn'] as List<dynamic>?)?.cast<String>() ?? const [],
+      checkinWindowOpen: data['checkinWindowOpen'] as bool? ?? false,
+      checkinWindowExpiresAt:
+          (data['checkinWindowExpiresAt'] as Timestamp?)?.toDate(),
     );
   }
 }
@@ -88,15 +105,15 @@ class MatchParticipant {
 }
 
 enum MatchStatus {
-  pending('pending'),
-  active('active'),
-  checkedIn('checked_in'),
+  confirmed('confirmed'),
   completed('completed'),
+  ghosted('ghosted'),
+  ghostedAll('ghosted_all'),
   cancelled('cancelled');
 
   final String value;
   const MatchStatus(this.value);
 
   static MatchStatus fromString(String? v) => MatchStatus.values
-      .firstWhere((e) => e.value == v, orElse: () => MatchStatus.active);
+      .firstWhere((e) => e.value == v, orElse: () => MatchStatus.confirmed);
 }
