@@ -15,6 +15,7 @@ class HomeShell extends StatelessWidget {
     return 0;
   }
 
+
   @override
   Widget build(BuildContext context) {
     final path = GoRouterState.of(context).matchedLocation;
@@ -53,11 +54,7 @@ class HomeShell extends StatelessWidget {
               activeIcon: Icons.chat_bubble,
               label: '消息',
               selected: index == 1,
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('消息页面待实现')),
-                );
-              },
+              onTap: () => context.go('/messages'),
             ),
             const SizedBox(width: 48), // 给浮动按钮留位置
             _NavItem(
