@@ -38,12 +38,18 @@
 - Firestore Indexes deployed ✅
 - Claude API Key set in `functions/.env`
 
-### 🔴 YOU — Next Manual Step
-**Connect FlutterFlow to Firebase:**
-1. Open https://flutterflow.io → your project
-2. Left menu → Settings → Firebase → Connect Firebase
-3. Select `dazi-dev`
-4. Download and upload `google-services.json` (Android) + `GoogleService-Info.plist` (iOS)
+### 🔴 YOU — Next Manual Step (BLOCKED: FlutterFlow 免费版限制)
+
+**问题：** FlutterFlow 免费版无法连接 Firebase，Connect Firebase 按钮是灰色的。
+
+**解决方案（二选一）：**
+
+**方案 A（推荐）：升级 FlutterFlow**
+- FlutterFlow → Settings → Billing → 升级 Standard 计划（$30/月）
+- 升级后：Settings → Firebase → Connect Firebase → 选 `dazi-dev`
+- 在 Firebase Console → Project Settings → 添加 Web 应用 → 复制 firebaseConfig 填入 FlutterFlow
+
+**方案 B：换其他前端工具（开发周期会大幅延长，不推荐）**
 
 **Also still needed (can do later):**
 - Google Maps API Key → https://console.cloud.google.com
