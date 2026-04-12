@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/glass_theme.dart';
+import '../../../core/theme/spacing.dart';
+import '../../../core/widgets/glass_button.dart';
+import '../../../core/widgets/glass_card.dart';
+import '../../../core/widgets/glass_input.dart';
+import '../../../core/widgets/glow_background.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/user_repository.dart';
 
@@ -65,6 +70,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final gt = GlassTheme.of(context);
     final userAsync = ref.watch(currentAppUserProvider);
     final user = userAsync.valueOrNull;
 
@@ -78,99 +84,128 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       _initialized = true;
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('编辑资料'),
-        actions: [
-          TextButton(
-            onPressed: _saving ? null : _save,
-            child: _saving
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('保存'),
-          ),
-        ],
-      ),
-      body: user == null
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                _label('昵称'),
-                TextField(
-                  controller: _nameController,
-                  maxLength: 20,
-                  decoration: const InputDecoration(hintText: '请输入昵称'),
-                ),
-                const SizedBox(height: 16),
-                _label('个人简介'),
-                TextField(
-                  controller: _bioController,
-                  maxLines: 3,
-                  maxLength: 100,
-                  decoration: const InputDecoration(hintText: '介绍一下你自己...'),
-                ),
-                const SizedBox(height: 16),
-                _label('城市'),
-                TextField(
-                  controller: _cityController,
-                  decoration: const InputDecoration(hintText: '你所在的城市'),
-                ),
-                const SizedBox(height: 24),
-                _label('兴趣标签'),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: _allTags.map((t) {
-                    final selected = _tags.contains(t);
-                    return GestureDetector(
-                      onTap: () => setState(() {
-                        if (selected) {
-                          _tags.remove(t);
-                        } else {
-                          _tags.add(t);
-                        }
-                      }),
+    return GlowBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          title: const Text('编辑资料'),
+        ),
+        body: user == null
+            ? const Center(child: CircularProgressIndicator())
+            : ListView(
+                padding: const EdgeInsets.all(Spacing.space20),
+                children: [
+                  // 头像上传区
+                  GlassCard(
+                    level: 1,
+                    padding: const EdgeInsets.all(Spacing.space20),
+                    child: Center(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 8),
+                        width: 96,
+                        height: 96,
                         decoration: BoxDecoration(
-                          color: selected
-                              ? AppColors.primary
-                              : AppColors.surfaceAlt,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          t,
-                          style: TextStyle(
-                            color: selected
-                                ? Colors.white
-                                : AppColors.textPrimary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: gt.colors.glassL1Border,
+                            width: 2,
+                            strokeAlign: BorderSide.strokeAlignOutside,
                           ),
+                          color: gt.colors.glassL2Bg,
+                        ),
+                        child: Icon(
+                          Icons.camera_alt_outlined,
+                          color: gt.colors.textSecondary,
+                          size: 32,
                         ),
                       ),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ),
+                    ),
+                  ),
+                  const SizedBox(height: Spacing.space16),
+                  _label('昵称', gt),
+                  GlassInput(
+                    controller: _nameController,
+                    hint: '请输入昵称',
+                  ),
+                  const SizedBox(height: Spacing.space16),
+                  _label('个人简介', gt),
+                  GlassInput(
+                    controller: _bioController,
+                    hint: '介绍一下你自己...',
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: Spacing.space16),
+                  _label('城市', gt),
+                  GlassInput(
+                    controller: _cityController,
+                    hint: '你所在的城市',
+                  ),
+                  const SizedBox(height: Spacing.space24),
+                  _label('兴趣标签', gt),
+                  const SizedBox(height: Spacing.space8),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: _allTags.map((t) {
+                      final selected = _tags.contains(t);
+                      return GestureDetector(
+                        onTap: () => setState(() {
+                          if (selected) {
+                            _tags.remove(t);
+                          } else {
+                            _tags.add(t);
+                          }
+                        }),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? gt.colors.primary
+                                : gt.colors.glassL1Bg,
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: selected
+                                  ? gt.colors.primary
+                                  : gt.colors.glassL1Border,
+                            ),
+                          ),
+                          child: Text(
+                            t,
+                            style: TextStyle(
+                              color: selected
+                                  ? gt.colors.textOnPrimary
+                                  : gt.colors.textPrimary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: Spacing.space24),
+                  GlassButton(
+                    label: '保存',
+                    variant: GlassButtonVariant.primary,
+                    expand: true,
+                    isLoading: _saving,
+                    onPressed: _saving ? null : _save,
+                  ),
+                ],
+              ),
+      ),
     );
   }
 
-  Widget _label(String text) => Padding(
+  Widget _label(String text, GlassThemeData gt) => Padding(
         padding: const EdgeInsets.only(bottom: 6),
         child: Text(
           text,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+            color: gt.colors.textPrimary,
           ),
         ),
       );
