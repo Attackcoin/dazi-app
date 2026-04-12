@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/glass_theme.dart';
+import '../../../core/theme/spacing.dart';
+import '../../../core/widgets/glass_card.dart';
+import '../../../core/widgets/glow_background.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/user_repository.dart';
 
@@ -53,6 +56,7 @@ class _PrivacySettingsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final gt = GlassTheme.of(context);
     final user = ref.watch(currentAppUserProvider).valueOrNull;
     if (user != null && !_initialized) {
       for (final entry in user.privacyPrefs.entries) {
@@ -61,53 +65,81 @@ class _PrivacySettingsScreenState
       _initialized = true;
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('隐私设置'),
-        actions: [
-          TextButton(
-            onPressed: _saving ? null : _save,
-            child: _saving
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('保存'),
+    return GlowBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          title: const Text('隐私设置'),
+          actions: [
+            TextButton(
+              onPressed: _saving ? null : _save,
+              child: _saving
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('保存'),
+            ),
+          ],
+        ),
+        body: ListView(
+          padding: const EdgeInsets.symmetric(
+            horizontal: Spacing.space16,
+            vertical: Spacing.space8,
           ),
-        ],
-      ),
-      body: ListView(
-        children: [
-          ..._items.map((item) {
-            final (key, title, subtitle) = item;
-            return SwitchListTile(
-              title: Text(title),
-              subtitle: Text(
-                subtitle,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
+          children: [
+            ..._items.map((item) {
+              final (key, title, subtitle) = item;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: Spacing.space8),
+                child: GlassCard(
+                  level: 1,
+                  child: SwitchListTile(
+                    title: Text(
+                      title,
+                      style: TextStyle(color: gt.colors.textPrimary),
+                    ),
+                    subtitle: Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: gt.colors.textSecondary,
+                      ),
+                    ),
+                    value: _prefs[key] ?? false,
+                    activeColor: gt.colors.primary,
+                    onChanged: (v) => setState(() => _prefs[key] = v),
+                  ),
+                ),
+              );
+            }),
+            const SizedBox(height: Spacing.space8),
+            GlassCard(
+              level: 1,
+              onTap: () => context.push('/settings/blocked'),
+              child: ListTile(
+                leading: Icon(Icons.block, color: gt.colors.textSecondary),
+                title: Text(
+                  '黑名单',
+                  style: TextStyle(color: gt.colors.textPrimary),
+                ),
+                subtitle: Text(
+                  '管理你屏蔽的用户',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: gt.colors.textSecondary,
+                  ),
+                ),
+                trailing: Icon(
+                  Icons.chevron_right,
+                  color: gt.colors.textTertiary,
                 ),
               ),
-              value: _prefs[key] ?? false,
-              activeColor: AppColors.primary,
-              onChanged: (v) => setState(() => _prefs[key] = v),
-            );
-          }),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.block, color: AppColors.textSecondary),
-            title: const Text('黑名单'),
-            subtitle: const Text(
-              '管理你屏蔽的用户',
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
             ),
-            trailing:
-                const Icon(Icons.chevron_right, color: AppColors.textTertiary),
-            onTap: () => context.push('/settings/blocked'),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
