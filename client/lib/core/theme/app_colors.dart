@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// 搭子 App 品牌色系。与 H5 分享页保持一致。
+@Deprecated('Use DaziColors via GlassTheme.of(context).colors instead. Will be removed after all pages migrated.')
 class AppColors {
   AppColors._();
 
@@ -27,6 +28,10 @@ class AppColors {
   static const Color success = Color(0xFF10B981);
   static const Color warning = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
+
+  // 功能色
+  static const Color starColor = Color(0xFFFFC107);   // 星评颜色（琥珀）
+  static const Color successGreen = Color(0xFF4CAF50); // 成功状态绿色
 
   // 性别标识
   static const Color male = Color(0xFF3B82F6);
