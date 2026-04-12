@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/dazi_colors.dart';
+import '../../../../core/theme/glass_theme.dart';
 
-/// 聊天底部输入栏 —— 文字输入 + 发送 + 附件占位。
+/// 聊天底部输入栏 —— 文字输入 + 发送 + 图片。
 class ChatInputBar extends StatefulWidget {
   const ChatInputBar({
     super.key,
     required this.onSend,
+    this.onPickImage,
     this.enabled = true,
   });
 
   final Future<void> Function(String text) onSend;
+  final Future<void> Function(XFile image)? onPickImage;
   final bool enabled;
 
   @override
@@ -39,6 +43,13 @@ class _ChatInputBarState extends State<ChatInputBar> {
     super.dispose();
   }
 
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    if (file == null || widget.onPickImage == null) return;
+    await widget.onPickImage!(file);
+  }
+
   Future<void> _handleSend() async {
     if (!_hasText || _sending) return;
     final text = _controller.text;
@@ -53,12 +64,15 @@ class _ChatInputBarState extends State<ChatInputBar> {
 
   @override
   Widget build(BuildContext context) {
+    final gt = GlassTheme.of(context);
+    final colors = gt.colors;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
+      decoration: BoxDecoration(
+        color: colors.surface,
         border: Border(
-          top: BorderSide(color: AppColors.border, width: 0.5),
+          top: BorderSide(color: colors.glassL1Border, width: 0.5),
         ),
       ),
       child: SafeArea(
@@ -67,25 +81,19 @@ class _ChatInputBarState extends State<ChatInputBar> {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             IconButton(
-              icon: const Icon(Icons.add_circle_outline),
-              color: AppColors.textSecondary,
-              onPressed: widget.enabled
-                  ? () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('图片 / 语音 / 位置待接入'),
-                        ),
-                      );
-                    }
-                  : null,
+              icon: const Icon(Icons.image_outlined),
+              color: colors.textSecondary,
+              tooltip: '发送图片',
+              onPressed: widget.enabled ? _pickImage : null,
             ),
             Expanded(
               child: Container(
                 constraints: const BoxConstraints(maxHeight: 120),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceAlt,
+                  color: colors.glassL1Bg,
                   borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: colors.glassL1Border),
                 ),
                 child: TextField(
                   controller: _controller,
@@ -94,13 +102,15 @@ class _ChatInputBarState extends State<ChatInputBar> {
                   maxLines: null,
                   textInputAction: TextInputAction.send,
                   onSubmitted: (_) => _handleSend(),
-                  decoration: const InputDecoration(
+                  style: TextStyle(color: colors.textPrimary, fontSize: 15),
+                  cursorColor: colors.primary,
+                  decoration: InputDecoration(
                     hintText: '发条消息...',
+                    hintStyle: TextStyle(color: colors.textTertiary),
                     border: InputBorder.none,
                     isDense: true,
-                    contentPadding: EdgeInsets.symmetric(vertical: 8),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
                   ),
-                  style: const TextStyle(fontSize: 15),
                 ),
               ),
             ),
@@ -130,6 +140,8 @@ class _SendButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final gt = GlassTheme.of(context);
+
     return GestureDetector(
       onTap: enabled ? onTap : null,
       child: AnimatedContainer(
@@ -137,7 +149,14 @@ class _SendButton extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: enabled ? AppColors.primary : AppColors.surfaceAlt,
+          gradient: enabled
+              ? const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: DaziColors.heroGradientColors,
+                )
+              : null,
+          color: enabled ? null : gt.colors.glassL1Bg,
           shape: BoxShape.circle,
         ),
         child: loading
@@ -149,9 +168,9 @@ class _SendButton extends StatelessWidget {
                 ),
               )
             : Icon(
-                Icons.arrow_upward,
-                color: enabled ? Colors.white : AppColors.textTertiary,
-                size: 20,
+                Icons.send,
+                color: enabled ? Colors.white : gt.colors.textTertiary,
+                size: 18,
               ),
       ),
     );

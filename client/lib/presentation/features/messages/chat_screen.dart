@@ -1,18 +1,23 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../data/models/match.dart';
+import '../../../core/theme/dazi_colors.dart';
+import '../../../core/theme/glass_theme.dart';
+import '../../../core/widgets/glow_background.dart';
+import '../../../data/models/chat_message.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/chat_repository.dart';
-import '../../../data/repositories/match_repository.dart';
+import '../../../data/repositories/post_create_repository.dart';
+import '../../../data/repositories/post_repository.dart';
 import 'widgets/chat_input_bar.dart';
-import 'widgets/message_bubble.dart';
 
-/// 单个搭子聊天页。`chatId` 等于 match 文档 id。
+/// 群聊页面。`chatId` 等于 postId —— 每个局一个群聊。
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key, required this.chatId});
 
@@ -28,7 +33,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    // 进入聊天后标记已读（异步，不阻塞 UI）
     WidgetsBinding.instance.addPostFrameCallback((_) => _markRead());
   }
 
@@ -39,9 +43,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       await ref
           .read(chatRepositoryProvider)
           .markRead(chatId: widget.chatId, uid: uid);
-    } catch (_) {
-      // 静默失败
-    }
+    } catch (_) {}
   }
 
   @override
@@ -50,15 +52,38 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     super.dispose();
   }
 
+  Future<void> _handlePickImage(XFile image) async {
+    final uid = ref.read(authStateProvider).valueOrNull?.uid;
+    if (uid == null) return;
+    final user = ref.read(currentAppUserProvider).valueOrNull;
+    try {
+      final file = File(image.path);
+      final url = await ref.read(postCreateRepositoryProvider).uploadImage(file);
+      await ref.read(chatRepositoryProvider).sendImage(
+            chatId: widget.chatId,
+            senderId: uid,
+            imageUrl: url,
+            senderName: user?.name,
+          );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('图片发送失败：$e')),
+        );
+      }
+    }
+  }
+
   Future<void> _handleSend(String text) async {
     final uid = ref.read(authStateProvider).valueOrNull?.uid;
     if (uid == null) return;
+    final user = ref.read(currentAppUserProvider).valueOrNull;
     await ref.read(chatRepositoryProvider).sendText(
           chatId: widget.chatId,
           senderId: uid,
           text: text,
+          senderName: user?.name,
         );
-    // 发送后滚到底部
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -72,186 +97,259 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final matchAsync = ref.watch(matchByIdProvider(widget.chatId));
+    final gt = GlassTheme.of(context);
+    final postAsync = ref.watch(postByIdProvider(widget.chatId));
     final messagesAsync = ref.watch(chatMessagesProvider(widget.chatId));
     final myUid = ref.watch(authStateProvider).valueOrNull?.uid ?? '';
 
-    final match = matchAsync.valueOrNull;
-    final other = match?.otherOf(myUid);
-    final title = other?.name ?? '聊天';
+    final post = postAsync.valueOrNull;
+    final title = post?.title ?? '群聊';
 
     return Scaffold(
+      backgroundColor: gt.colors.base,
       appBar: AppBar(
-        title: Row(
+        backgroundColor: gt.colors.surface,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: AppColors.surfaceAlt,
-              backgroundImage: (other?.avatar.isNotEmpty ?? false)
-                  ? CachedNetworkImageProvider(other!.avatar)
-                  : null,
-              child: (other?.avatar.isEmpty ?? true)
-                  ? const Icon(Icons.person, size: 20)
-                  : null,
+            Text(
+              title,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  if (match != null && match.postTitle.isNotEmpty)
-                    Text(
-                      match.postTitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                ],
+            if (post != null)
+              Text(
+                '${post.acceptedCount}/${post.totalSlots} 人',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: gt.colors.textSecondary,
+                ),
               ),
-            ),
           ],
         ),
-        titleSpacing: 0,
+        titleSpacing: 4,
         actions: [
+          // 查看局详情
           IconButton(
-            icon: const Icon(Icons.error_outline, color: AppColors.primary),
-            tooltip: '紧急求助',
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('紧急求助功能待接入')),
-              );
-            },
+            icon: const Icon(Icons.info_outline),
+            tooltip: '活动详情',
+            onPressed: () => context.push('/post/${widget.chatId}'),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          if (match != null) _MeetupBanner(match: match),
-          Expanded(
-            child: messagesAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('消息加载失败：$e')),
-              data: (messages) {
-                if (messages.isEmpty) return const _EmptyChat();
-                return ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  itemCount: messages.length,
-                  itemBuilder: (_, i) {
-                    final msg = messages[i];
-                    final showTs = i == 0 ||
-                        msg.timestamp - messages[i - 1].timestamp >
-                            5 * 60 * 1000;
-                    return MessageBubble(
-                      message: msg,
-                      isMe: msg.senderId == myUid,
-                      showTimestamp: showTs,
-                    );
-                  },
-                );
-              },
+      body: GlowBackground(
+        child: Column(
+          children: [
+            // 活动时间横幅
+            if (post?.time != null) _TimeBanner(time: post!.time!),
+            Expanded(
+              child: messagesAsync.when(
+                loading: () =>
+                    const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.error_outline, size: 48,
+                            color: gt.colors.textTertiary),
+                        const SizedBox(height: 12),
+                        Text('消息加载失败：$e', textAlign: TextAlign.center),
+                        const SizedBox(height: 20),
+                        FilledButton.tonal(
+                          onPressed: () =>
+                              ref.invalidate(chatMessagesProvider(widget.chatId)),
+                          child: const Text('重试'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                data: (messages) {
+                  if (messages.isEmpty) return const _EmptyChat();
+                  return ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    itemCount: messages.length,
+                    itemBuilder: (_, i) {
+                      final msg = messages[i];
+                      final isMe = msg.senderId == myUid;
+                      final showTs = i == 0 ||
+                          msg.timestamp - messages[i - 1].timestamp >
+                              5 * 60 * 1000;
+                      // 群聊中显示非自己的发送者名字
+                      final showName = !isMe &&
+                          (i == 0 || messages[i - 1].senderId != msg.senderId);
+                      return _GroupMessageBubble(
+                        message: msg,
+                        isMe: isMe,
+                        showTimestamp: showTs,
+                        showSenderName: showName,
+                        senderName: _getSenderName(msg),
+                      );
+                    },
+                  );
+                },
+              ),
             ),
-          ),
-          ChatInputBar(onSend: _handleSend),
-        ],
+            ChatInputBar(onSend: _handleSend, onPickImage: _handlePickImage),
+          ],
+        ),
       ),
     );
   }
+
+  /// 从消息冗余字段获取发送者名字，避免 N+1 Firestore 查询。
+  String _getSenderName(ChatMessage msg) {
+    // 优先用消息中存储的冗余字段
+    if (msg.senderName != null && msg.senderName!.isNotEmpty) {
+      return msg.senderName!;
+    }
+    // fallback：短 UID 截断显示
+    return msg.senderId.length >= 6
+        ? msg.senderId.substring(0, 6)
+        : msg.senderId;
+  }
 }
 
-class _MeetupBanner extends StatelessWidget {
-  const _MeetupBanner({required this.match});
+/// 群聊气泡 —— 显示发送者昵称。
+class _GroupMessageBubble extends StatelessWidget {
+  const _GroupMessageBubble({
+    required this.message,
+    required this.isMe,
+    this.showTimestamp = false,
+    this.showSenderName = false,
+    this.senderName = '',
+  });
 
-  final AppMatch match;
+  final ChatMessage message;
+  final bool isMe;
+  final bool showTimestamp;
+  final bool showSenderName;
+  final String senderName;
 
   @override
   Widget build(BuildContext context) {
-    final time = match.postTime;
-    final isCompleted = match.status == MatchStatus.completed;
-    final isToday = time != null && DateUtils.isSameDay(time, DateTime.now());
+    final gt = GlassTheme.of(context);
 
-    // 已完成：显示「写评价」入口
-    if (isCompleted) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        color: AppColors.primary.withValues(alpha: 0.08),
-        child: Row(
-          children: [
-            const Icon(Icons.celebration,
-                size: 16, color: AppColors.primary),
-            const SizedBox(width: 8),
-            const Expanded(
-              child: Text(
-                '搭子已完成，记得写评价 & 看回忆卡',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
-              ),
+    if (message.type == ChatMessageType.system) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: gt.colors.glassL2Bg,
+              borderRadius: BorderRadius.circular(999),
             ),
-            TextButton(
-              onPressed: () => context.push('/review/${match.id}'),
-              style: TextButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: const Text(
-                '写评价',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-              ),
+            child: Text(
+              message.text,
+              style: TextStyle(fontSize: 11, color: gt.colors.textSecondary),
             ),
-          ],
+          ),
         ),
       );
     }
 
-    if (time == null) return const SizedBox.shrink();
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: AppColors.primary.withValues(alpha: 0.08),
-      child: Row(
-        children: [
-          const Icon(Icons.schedule, size: 16, color: AppColors.primary),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              '活动时间：${DateFormat('M月d日 HH:mm').format(time)}',
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
+    return Column(
+      crossAxisAlignment:
+          isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        if (showTimestamp)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Center(
+              child: Text(
+                DateFormat('M月d日 HH:mm').format(message.sentAt),
+                style: TextStyle(fontSize: 11, color: gt.colors.textTertiary),
               ),
             ),
           ),
-          if (isToday)
-            TextButton(
-              onPressed: () => context.push('/checkin/${match.id}'),
-              style: TextButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: const Text(
-                '开始签到',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        if (showSenderName && !isMe)
+          Padding(
+            padding: const EdgeInsets.only(left: 16, bottom: 2),
+            child: Text(
+              senderName,
+              style: TextStyle(
+                fontSize: 11,
+                color: gt.colors.textTertiary,
+                fontWeight: FontWeight.w500,
               ),
             ),
+          ),
+        Container(
+          margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 12),
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.72,
+          ),
+          decoration: BoxDecoration(
+            color: isMe ? null : gt.colors.glassL1Bg,
+            gradient: isMe
+                ? const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: DaziColors.heroGradientColors,
+                  )
+                : null,
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(20),
+              topRight: const Radius.circular(20),
+              bottomLeft: Radius.circular(isMe ? 20 : 4),
+              bottomRight: Radius.circular(isMe ? 4 : 20),
+            ),
+            border: isMe
+                ? null
+                : Border.all(color: gt.colors.glassL1Border),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: message.type == ChatMessageType.image && message.mediaUrl != null
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: CachedNetworkImage(
+                    imageUrl: message.mediaUrl!,
+                    width: 200,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => const SizedBox(
+                      width: 200,
+                      height: 150,
+                      child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                    ),
+                  ),
+                )
+              : Text(
+                  message.text,
+                  style: TextStyle(
+                    color: isMe ? Colors.white : gt.colors.textPrimary,
+                    fontSize: 15,
+                    height: 1.4,
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TimeBanner extends StatelessWidget {
+  const _TimeBanner({required this.time});
+
+  final DateTime time;
+
+  @override
+  Widget build(BuildContext context) {
+    final gt = GlassTheme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      color: gt.colors.primary.withValues(alpha: 0.08),
+      child: Row(
+        children: [
+          Icon(Icons.schedule, size: 16, color: gt.colors.primary),
+          const SizedBox(width: 8),
+          Text(
+            '活动时间：${DateFormat('M月d日 HH:mm').format(time)}',
+            style: TextStyle(fontSize: 12, color: gt.colors.textSecondary),
+          ),
         ],
       ),
     );
@@ -263,12 +361,20 @@ class _EmptyChat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    final gt = GlassTheme.of(context);
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(24),
-        child: Text(
-          '打个招呼开始聊天吧～',
-          style: TextStyle(color: AppColors.textTertiary, fontSize: 13),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('👋', style: TextStyle(fontSize: 48)),
+            const SizedBox(height: 12),
+            Text(
+              '群聊已创建，大家打个招呼吧~',
+              style: TextStyle(color: gt.colors.textTertiary, fontSize: 13),
+            ),
+          ],
         ),
       ),
     );
