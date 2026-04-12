@@ -1,94 +1,78 @@
+// client/lib/core/theme/app_theme.dart
 import 'package:flutter/material.dart';
 
-import 'app_colors.dart';
+import 'dazi_colors.dart';
+import 'spacing.dart';
 
+/// 搭子 App Material ThemeData 工厂。
+///
+/// 使用 [AppTheme.dark] 和 [AppTheme.light] 获取对应主题。
+/// Glass Morph 特有属性（玻璃层级等）通过 [GlassTheme] 获取。
 class AppTheme {
   AppTheme._();
 
-  static ThemeData get light {
-    const base = TextTheme(
-      displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
-      headlineMedium: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-      titleLarge: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-      titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-      bodyLarge: TextStyle(fontSize: 15, color: AppColors.textPrimary, height: 1.5),
-      bodyMedium: TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.5),
-      labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-      labelSmall: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+  static ThemeData get dark => _build(DaziColors.dark, Brightness.dark);
+  static ThemeData get light => _build(DaziColors.light, Brightness.light);
+
+  static ThemeData _build(DaziColorScheme c, Brightness brightness) {
+    final textTheme = TextTheme(
+      displayLarge: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: c.textPrimary, height: 1.2),
+      headlineMedium: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: c.textPrimary, height: 1.3),
+      titleLarge: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: c.textPrimary, height: 1.3),
+      titleMedium: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: c.textPrimary, height: 1.3),
+      bodyLarge: TextStyle(fontSize: 15, fontWeight: FontWeight.w400, color: c.textPrimary, height: 1.5),
+      bodyMedium: TextStyle(fontSize: 13, fontWeight: FontWeight.w400, color: c.textSecondary, height: 1.5),
+      bodySmall: TextStyle(fontSize: 11, fontWeight: FontWeight.w400, color: c.textTertiary, height: 1.4),
+      labelSmall: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: c.textTertiary, height: 1.2),
     );
 
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.light,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.primary,
-        primary: AppColors.primary,
-        surface: AppColors.surface,
+      brightness: brightness,
+      colorScheme: ColorScheme(
+        brightness: brightness,
+        primary: c.primary,
+        onPrimary: c.textOnPrimary,
+        secondary: c.accent,
+        onSecondary: c.textOnPrimary,
+        error: c.error,
+        onError: c.textOnPrimary,
+        surface: c.surface,
+        onSurface: c.textPrimary,
       ),
-      scaffoldBackgroundColor: AppColors.background,
-      fontFamily: 'PingFang SC',
-      textTheme: base,
-      appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.surface,
-        foregroundColor: AppColors.textPrimary,
+      scaffoldBackgroundColor: c.base,
+      textTheme: textTheme,
+      appBarTheme: AppBarTheme(
+        backgroundColor: c.elevated.withValues(alpha: 0.85),
+        foregroundColor: c.textPrimary,
         elevation: 0,
         centerTitle: false,
-        scrolledUnderElevation: 0.5,
+        scrolledUnderElevation: 0,
         titleTextStyle: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w700,
-          color: AppColors.textPrimary,
+          color: c.textPrimary,
         ),
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-      ),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.textPrimary,
-          side: const BorderSide(color: AppColors.border),
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: AppColors.surfaceAlt,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       ),
       cardTheme: CardTheme(
-        color: AppColors.surface,
+        color: c.glassL1Bg,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-          side: const BorderSide(color: AppColors.border, width: 0.5),
+          borderRadius: BorderRadius.circular(Radii.card),
+          side: BorderSide(color: c.glassL1Border, width: 1),
         ),
         margin: EdgeInsets.zero,
       ),
-      dividerTheme: const DividerThemeData(
-        color: AppColors.border,
+      dividerTheme: DividerThemeData(
+        color: c.glassL1Border,
         thickness: 0.5,
         space: 0.5,
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: c.elevated,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(Radii.sheet)),
+        ),
       ),
     );
   }
