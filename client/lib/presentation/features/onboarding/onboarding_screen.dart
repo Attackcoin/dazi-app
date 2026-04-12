@@ -3,7 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/dazi_colors.dart';
+import '../../../core/theme/glass_theme.dart';
+import '../../../core/theme/spacing.dart';
+import '../../../core/widgets/glass_button.dart';
+import '../../../core/widgets/glow_background.dart';
 import '../../../data/repositories/auth_repository.dart';
 import 'widgets/step_city.dart';
 import 'widgets/step_gender.dart';
@@ -101,86 +105,107 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final gt = GlassTheme.of(context);
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 16),
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                onPageChanged: (i) => setState(() => _currentStep = i),
-                children: [
-                  StepGender(
-                    value: _data.gender,
-                    onChanged: (v) => setState(() => _data.gender = v),
-                  ),
-                  StepNameAvatar(
-                    name: _data.name,
-                    avatarUrl: _data.avatarUrl,
-                    onNameChanged: (v) => setState(() => _data.name = v),
-                    onAvatarChanged: (v) => setState(() => _data.avatarUrl = v),
-                  ),
-                  StepYear(
-                    value: _data.birthYear,
-                    onChanged: (v) => setState(() => _data.birthYear = v),
-                  ),
-                  StepTags(
-                    selected: _data.tags,
-                    socialAnxietyMode: _data.socialAnxietyMode,
-                    onTagsChanged: (v) => setState(() => _data.tags = v),
-                    onSocialAnxietyChanged: (v) =>
-                        setState(() => _data.socialAnxietyMode = v),
-                  ),
-                  StepCity(
-                    value: _data.city,
-                    onChanged: (v) => setState(() => _data.city = v),
-                  ),
-                ],
+      backgroundColor: gt.colors.base,
+      body: GlowBackground(
+        child: SafeArea(
+          child: Column(
+            children: [
+              _buildHeader(gt),
+              const SizedBox(height: Spacing.space16),
+              Expanded(
+                child: PageView(
+                  controller: _pageController,
+                  physics: const NeverScrollableScrollPhysics(),
+                  onPageChanged: (i) => setState(() => _currentStep = i),
+                  children: [
+                    StepGender(
+                      value: _data.gender,
+                      onChanged: (v) => setState(() => _data.gender = v),
+                    ),
+                    StepNameAvatar(
+                      name: _data.name,
+                      avatarUrl: _data.avatarUrl,
+                      onNameChanged: (v) => setState(() => _data.name = v),
+                      onAvatarChanged: (v) => setState(() => _data.avatarUrl = v),
+                    ),
+                    StepYear(
+                      value: _data.birthYear,
+                      onChanged: (v) => setState(() => _data.birthYear = v),
+                    ),
+                    StepTags(
+                      selected: _data.tags,
+                      socialAnxietyMode: _data.socialAnxietyMode,
+                      onTagsChanged: (v) => setState(() => _data.tags = v),
+                      onSocialAnxietyChanged: (v) =>
+                          setState(() => _data.socialAnxietyMode = v),
+                    ),
+                    StepCity(
+                      value: _data.city,
+                      onChanged: (v) => setState(() => _data.city = v),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            _buildBottomBar(),
-          ],
+              _buildBottomBar(),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(GlassThemeData gt) {
+    final progress = (_currentStep + 1) / _totalSteps;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+      padding: const EdgeInsets.fromLTRB(
+          Spacing.space24, Spacing.space16, Spacing.space24, 0),
       child: Row(
         children: [
           if (_currentStep > 0)
             IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+              icon: Icon(Icons.arrow_back_ios_new,
+                  size: 20, color: gt.colors.textPrimary),
               onPressed: _back,
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
             )
           else
             const SizedBox(width: 20),
-          const SizedBox(width: 12),
+          const SizedBox(width: Spacing.space12),
           Expanded(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(3),
-              child: LinearProgressIndicator(
-                value: (_currentStep + 1) / _totalSteps,
-                minHeight: 4,
-                backgroundColor: AppColors.surfaceAlt,
-                valueColor:
-                    const AlwaysStoppedAnimation(AppColors.primary),
+              child: Stack(
+                children: [
+                  // Track
+                  Container(
+                    height: 4,
+                    color: gt.colors.glassL2Bg,
+                  ),
+                  // Fill — gradient
+                  FractionallySizedBox(
+                    widthFactor: progress,
+                    child: Container(
+                      height: 4,
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: DaziColors.heroGradientColors,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: Spacing.space12),
           Text(
             '${_currentStep + 1}/$_totalSteps',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: AppColors.textTertiary,
+              color: gt.colors.textTertiary,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -191,19 +216,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildBottomBar() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-      child: ElevatedButton(
+      padding: const EdgeInsets.fromLTRB(
+          Spacing.space24, Spacing.space12, Spacing.space24, Spacing.space24),
+      child: GlassButton(
+        label: _currentStep == _totalSteps - 1 ? '完成' : '下一步',
         onPressed: (_canProceed && !_submitting) ? _next : null,
-        child: _submitting
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              )
-            : Text(_currentStep == _totalSteps - 1 ? '完成' : '下一步'),
+        variant: GlassButtonVariant.primary,
+        isLoading: _submitting,
+        expand: true,
       ),
     );
   }

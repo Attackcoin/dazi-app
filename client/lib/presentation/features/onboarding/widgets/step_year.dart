@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/dazi_colors.dart';
+import '../../../../core/theme/glass_theme.dart';
+import '../../../../core/theme/spacing.dart';
 
 class StepYear extends StatelessWidget {
   const StepYear({super.key, required this.value, required this.onChanged});
@@ -11,24 +13,25 @@ class StepYear extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final gt = GlassTheme.of(context);
     final currentYear = DateTime.now().year;
-    final minYear = 1950;
+    const minYear = 1950;
     final maxYear = currentYear - 18;
     final defaultYear = value ?? (currentYear - 25);
 
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(Spacing.space24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('你的出生年份', style: Theme.of(context).textTheme.displayLarge),
-          const SizedBox(height: 8),
+          const SizedBox(height: Spacing.space8),
           Text(
             '仅用于匹配同龄人，不会公开完整生日',
             style: Theme.of(context)
                 .textTheme
                 .bodyLarge
-                ?.copyWith(color: AppColors.textSecondary),
+                ?.copyWith(color: gt.colors.textSecondary),
           ),
           const SizedBox(height: 40),
           Center(
@@ -36,7 +39,9 @@ class StepYear extends StatelessWidget {
               height: 56,
               padding: const EdgeInsets.symmetric(horizontal: 32),
               decoration: BoxDecoration(
-                gradient: AppColors.ctaGradient,
+                gradient: const LinearGradient(
+                  colors: DaziColors.heroGradientColors,
+                ),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
@@ -50,7 +55,7 @@ class StepYear extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: Spacing.space8),
                   const Text(
                     '年',
                     style: TextStyle(
@@ -62,7 +67,7 @@ class StepYear extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: Spacing.space24),
           SizedBox(
             height: 200,
             child: CupertinoPicker(
@@ -76,7 +81,10 @@ class StepYear extends StatelessWidget {
                 (i) => Center(
                   child: Text(
                     '${minYear + i}',
-                    style: const TextStyle(fontSize: 20),
+                    style: TextStyle(
+                      fontSize: 20,
+                      color: gt.colors.textPrimary,
+                    ),
                   ),
                 ),
               ),

@@ -1,89 +1,191 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/glass_theme.dart';
+import '../../../../core/theme/spacing.dart';
+import '../../../../core/widgets/pill_tag.dart';
+import '../../../../data/services/location_service.dart';
 
-class StepCity extends StatelessWidget {
+class StepCity extends ConsumerStatefulWidget {
   const StepCity({super.key, required this.value, required this.onChanged});
 
   final String value;
   final ValueChanged<String> onChanged;
 
-  static const _hotCities = [
+  @override
+  ConsumerState<StepCity> createState() => _StepCityState();
+}
+
+class _StepCityState extends ConsumerState<StepCity> {
+  bool _locating = true; // 一进来就开始定位
+
+  // 中国热门
+  static const _cnCities = [
     '北京', '上海', '广州', '深圳',
     '杭州', '成都', '南京', '武汉',
-    '西安', '重庆', '苏州', '长沙',
+  ];
+
+  // 全球热门
+  static const _globalCities = [
+    'Tokyo', 'Seoul', 'Singapore', 'Bangkok',
+    'New York', 'London', 'Paris', 'Sydney',
+    'Los Angeles', 'Toronto', 'Dubai', 'Berlin',
   ];
 
   @override
+  void initState() {
+    super.initState();
+    // 页面加载后自动定位
+    WidgetsBinding.instance.addPostFrameCallback((_) => _autoLocate());
+  }
+
+  Future<void> _autoLocate() async {
+    try {
+      final result =
+          await ref.read(locationServiceProvider).getCurrentCity();
+      if (!mounted) return;
+      if (result != null && widget.value.isEmpty) {
+        widget.onChanged(result.city);
+      }
+    } catch (_) {
+      // 定位失败静默处理，用户可以手动选
+    } finally {
+      if (mounted) setState(() => _locating = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final gt = GlassTheme.of(context);
     return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('你常住哪座城市？', style: Theme.of(context).textTheme.displayLarge),
-          const SizedBox(height: 8),
-          Text(
-            '搭子只会推荐同城的活动',
-            style: Theme.of(context)
-                .textTheme
-                .bodyLarge
-                ?.copyWith(color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: 40),
-          const Text(
-            '热门城市',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
+      padding: const EdgeInsets.all(Spacing.space24),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('你在哪座城市？',
+                style: Theme.of(context).textTheme.displayLarge),
+            const SizedBox(height: Spacing.space8),
+            Text(
+              '我们会推荐同城的活动',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyLarge
+                  ?.copyWith(color: gt.colors.textSecondary),
             ),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: _hotCities.map((c) {
-              final selected = value == c;
-              return GestureDetector(
-                onTap: () => onChanged(c),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: selected ? AppColors.primary : AppColors.surfaceAlt,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    c,
-                    style: TextStyle(
-                      color: selected ? Colors.white : AppColors.textPrimary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+            const SizedBox(height: Spacing.space24),
+
+            // 定位状态 / 定位结果
+            if (_locating)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: Spacing.space16, vertical: Spacing.space12),
+                decoration: BoxDecoration(
+                  color: gt.colors.glassL1Bg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: gt.colors.glassL1Border),
                 ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 32),
-          const Text(
-            '或手动输入',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: gt.colors.primary),
+                    ),
+                    const SizedBox(width: 10),
+                    Text('正在定位...',
+                        style: TextStyle(
+                            fontSize: 14, color: gt.colors.textSecondary)),
+                  ],
+                ),
+              )
+            else if (widget.value.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: Spacing.space16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: gt.colors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                      color: gt.colors.primary.withValues(alpha: 0.2)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.location_on,
+                        color: gt.colors.primary, size: 18),
+                    const SizedBox(width: Spacing.space8),
+                    Expanded(
+                      child: Text(
+                        widget.value,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: gt.colors.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            const SizedBox(height: 28),
+            Text(
+              '中国热门',
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: gt.colors.textPrimary),
             ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            decoration: const InputDecoration(
-              hintText: '输入城市名',
-              prefixIcon: Icon(Icons.location_on_outlined),
+            const SizedBox(height: Spacing.space12),
+            _buildCityChips(_cnCities),
+
+            const SizedBox(height: Spacing.space24),
+            Text(
+              'Global',
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: gt.colors.textPrimary),
             ),
-            onChanged: onChanged,
-            controller: TextEditingController(text: value),
-          ),
-        ],
+            const SizedBox(height: Spacing.space12),
+            _buildCityChips(_globalCities),
+
+            const SizedBox(height: 28),
+            Text(
+              '或手动输入',
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: gt.colors.textPrimary),
+            ),
+            const SizedBox(height: Spacing.space12),
+            TextField(
+              decoration: const InputDecoration(
+                hintText: '输入城市名 / Enter city name',
+                prefixIcon: Icon(Icons.search),
+              ),
+              onChanged: widget.onChanged,
+              controller: TextEditingController(text: widget.value),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildCityChips(List<String> cities) {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: cities.map((c) {
+        final isSelected = widget.value == c;
+        return PillTag(
+          label: c,
+          selected: isSelected,
+          onTap: () => widget.onChanged(c),
+        );
+      }).toList(),
     );
   }
 }

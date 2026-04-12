@@ -1,14 +1,15 @@
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/glass_theme.dart';
+import '../../../../core/theme/spacing.dart';
+import '../../../../data/repositories/auth_repository.dart';
 
-class StepNameAvatar extends StatefulWidget {
+class StepNameAvatar extends ConsumerStatefulWidget {
   const StepNameAvatar({
     super.key,
     required this.name,
@@ -23,10 +24,10 @@ class StepNameAvatar extends StatefulWidget {
   final ValueChanged<String> onAvatarChanged;
 
   @override
-  State<StepNameAvatar> createState() => _StepNameAvatarState();
+  ConsumerState<StepNameAvatar> createState() => _StepNameAvatarState();
 }
 
-class _StepNameAvatarState extends State<StepNameAvatar> {
+class _StepNameAvatarState extends ConsumerState<StepNameAvatar> {
   late final TextEditingController _controller;
   bool _uploading = false;
 
@@ -43,7 +44,7 @@ class _StepNameAvatarState extends State<StepNameAvatar> {
   }
 
   Future<void> _pickAvatar() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = ref.read(firebaseAuthProvider).currentUser;
     if (user == null) return;
 
     final XFile? picked = await ImagePicker().pickImage(
@@ -55,10 +56,12 @@ class _StepNameAvatarState extends State<StepNameAvatar> {
 
     setState(() => _uploading = true);
     try {
-      final ref = FirebaseStorage.instance
-          .ref('avatars/${user.uid}/${DateTime.now().millisecondsSinceEpoch}.jpg');
-      await ref.putFile(File(picked.path));
-      final url = await ref.getDownloadURL();
+      final storage = ref.read(firebaseStorageProvider);
+      final ref0 = storage.ref(
+        'avatars/${user.uid}/${DateTime.now().millisecondsSinceEpoch}.jpg',
+      );
+      await ref0.putFile(File(picked.path));
+      final url = await ref0.getDownloadURL();
       widget.onAvatarChanged(url);
     } catch (e) {
       if (!mounted) return;
@@ -72,19 +75,20 @@ class _StepNameAvatarState extends State<StepNameAvatar> {
 
   @override
   Widget build(BuildContext context) {
+    final gt = GlassTheme.of(context);
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(Spacing.space24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('给自己起个名字', style: Theme.of(context).textTheme.displayLarge),
-          const SizedBox(height: 8),
+          const SizedBox(height: Spacing.space8),
           Text(
             '让搭子一眼记住你',
             style: Theme.of(context)
                 .textTheme
                 .bodyLarge
-                ?.copyWith(color: AppColors.textSecondary),
+                ?.copyWith(color: gt.colors.textSecondary),
           ),
           const SizedBox(height: 40),
           Center(
@@ -96,18 +100,21 @@ class _StepNameAvatarState extends State<StepNameAvatar> {
                     width: 120,
                     height: 120,
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceAlt,
+                      color: gt.colors.glassL2Bg,
                       shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.border, width: 2),
+                      border: Border.all(
+                          color: gt.colors.glassL2Border, width: 2),
                     ),
                     child: ClipOval(
                       child: _uploading
-                          ? const Center(
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                          ? Center(
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: gt.colors.primary),
                             )
                           : (widget.avatarUrl == null
-                              ? const Icon(Icons.add_a_photo_outlined,
-                                  size: 36, color: AppColors.textTertiary)
+                              ? Icon(Icons.add_a_photo_outlined,
+                                  size: 36, color: gt.colors.textTertiary)
                               : CachedNetworkImage(
                                   imageUrl: widget.avatarUrl!,
                                   fit: BoxFit.cover,
@@ -122,8 +129,8 @@ class _StepNameAvatarState extends State<StepNameAvatar> {
                     child: Container(
                       width: 32,
                       height: 32,
-                      decoration: const BoxDecoration(
-                        color: AppColors.primary,
+                      decoration: BoxDecoration(
+                        color: gt.colors.primary,
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(Icons.camera_alt,
