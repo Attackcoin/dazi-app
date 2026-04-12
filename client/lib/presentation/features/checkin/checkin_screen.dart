@@ -3,7 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/glass_theme.dart';
+import '../../../core/widgets/celebration_overlay.dart';
+import '../../../core/widgets/glass_button.dart';
+import '../../../core/widgets/glass_card.dart';
+import '../../../core/widgets/glow_background.dart';
 import '../../../data/models/match.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/checkin_repository.dart';
@@ -38,7 +42,7 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen>
     super.dispose();
   }
 
-  Future<void> _submitCheckin({double? lat, double? lng}) async {
+  Future<void> _submitCheckin({double? lat, double? lng, String? scannedUid}) async {
     if (_submitting) return;
     setState(() => _submitting = true);
     try {
@@ -46,14 +50,17 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen>
             matchId: widget.matchId,
             lat: lat,
             lng: lng,
+            scannedUid: scannedUid,
           );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(allDone ? '双方已签到，搭子完成 🎉' : '签到成功 ✓ 等待对方签到'),
-        ),
-      );
-      if (allDone) context.pop();
+      if (allDone) {
+        await CelebrationOverlay.showCheckinSuccess(context);
+        if (mounted) context.pop();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('签到成功 ✓ 等待对方签到')),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -105,112 +112,170 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen>
 
   @override
   Widget build(BuildContext context) {
+    final gt = GlassTheme.of(context);
     final matchAsync = ref.watch(matchByIdProvider(widget.matchId));
     final uid = ref.watch(authStateProvider).valueOrNull?.uid ?? '';
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('签到'),
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textSecondary,
-          indicatorColor: AppColors.primary,
-          tabs: const [
-            Tab(text: '我的二维码'),
-            Tab(text: '扫对方二维码'),
-          ],
-        ),
-      ),
-      body: matchAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('加载失败：$e')),
-        data: (match) {
-          if (match == null) return const Center(child: Text('搭子不存在'));
-          return Column(
-            children: [
-              _StatusBanner(match: match, myUid: uid),
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _MyQrPane(match: match, uid: uid),
-                    _ScanPane(
-                      match: match,
-                      onScanned: (scannedUid) => _submitCheckin(),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-                child: Column(
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: _submitting ? null : _gpsCheckin,
-                      icon: const Icon(Icons.my_location, size: 18),
-                      label: const Text('GPS 签到（无法扫码时使用）'),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 48),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+    return GlowBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: Text('签到', style: TextStyle(color: gt.colors.textPrimary)),
+          iconTheme: IconThemeData(color: gt.colors.textPrimary),
+          bottom: TabBar(
+            controller: _tabController,
+            labelColor: gt.colors.primary,
+            unselectedLabelColor: gt.colors.textSecondary,
+            indicatorColor: gt.colors.primary,
+            tabs: const [
+              Tab(text: '我的二维码'),
+              Tab(text: '扫对方二维码'),
             ],
-          );
-        },
+          ),
+        ),
+        body: matchAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.error_outline, size: 48,
+                      color: gt.colors.textSecondary),
+                  const SizedBox(height: 12),
+                  Text('加载失败：$e', textAlign: TextAlign.center,
+                      style: TextStyle(color: gt.colors.textPrimary)),
+                  const SizedBox(height: 20),
+                  FilledButton.tonal(
+                    onPressed: () =>
+                        ref.invalidate(matchByIdProvider(widget.matchId)),
+                    child: const Text('重试'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          data: (match) {
+            if (match == null) return Center(child: Text('搭子不存在', style: TextStyle(color: gt.colors.textPrimary)));
+            return Column(
+              children: [
+                _StatusBanner(match: match, myUid: uid),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _MyQrPane(match: match, uid: uid),
+                      _ScanPane(
+                        match: match,
+                        onScanned: (scannedUid) => _submitCheckin(scannedUid: scannedUid),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                  child: Column(
+                    children: [
+                      GlassButton(
+                        label: 'GPS 签到（无法扫码时使用）',
+                        icon: Icons.my_location,
+                        variant: GlassButtonVariant.primary,
+                        expand: true,
+                        isLoading: _submitting,
+                        onPressed: _submitting ? null : _gpsCheckin,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
 }
 
-class _StatusBanner extends StatelessWidget {
+class _StatusBanner extends StatefulWidget {
   const _StatusBanner({required this.match, required this.myUid});
 
   final AppMatch match;
   final String myUid;
 
   @override
+  State<_StatusBanner> createState() => _StatusBannerState();
+}
+
+class _StatusBannerState extends State<_StatusBanner>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulseCtrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1200),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _pulseCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final gt = GlassTheme.of(context);
+    final match = widget.match;
+    final myUid = widget.myUid;
     final meChecked = match.hasCheckedIn(myUid);
     final windowOpen = match.checkinWindowOpen;
 
-    final (bg, icon, text) = switch ((windowOpen, meChecked, match.allCheckedIn)) {
+    // Determine banner state
+    final isGpsActive = windowOpen && !meChecked && !match.allCheckedIn;
+
+    final (bgColor, icon, text) = switch ((windowOpen, meChecked, match.allCheckedIn)) {
       (false, _, _) => (
-          Colors.amber.withValues(alpha: 0.15),
+          gt.colors.starColor.withValues(alpha: 0.15),
           Icons.access_time,
           '签到窗口未开启（见面时间后自动开启，持续 1 小时）',
         ),
       (true, _, true) => (
-          AppColors.primary.withValues(alpha: 0.12),
+          gt.colors.primary.withValues(alpha: 0.12),
           Icons.celebration,
           '双方都已签到，搭子完成！',
         ),
       (true, true, false) => (
-          AppColors.primary.withValues(alpha: 0.12),
+          gt.colors.primary.withValues(alpha: 0.12),
           Icons.check_circle,
           '你已签到 · 等待对方签到',
         ),
       (true, false, _) => (
-          Colors.green.withValues(alpha: 0.12),
+          gt.colors.success.withValues(alpha: 0.12),
           Icons.radio_button_unchecked,
           '签到窗口进行中，请尽快完成签到',
         ),
     };
 
-    return Container(
-      width: double.infinity,
+    return GlassCard(
+      level: 1,
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       padding: const EdgeInsets.all(14),
-      color: bg,
       child: Row(
         children: [
-          Icon(icon, size: 18, color: AppColors.textSecondary),
+          isGpsActive
+              ? AnimatedBuilder(
+                  animation: _pulseCtrl,
+                  builder: (_, __) => Opacity(
+                    opacity: 0.4 + 0.6 * _pulseCtrl.value,
+                    child: Icon(icon, size: 18, color: gt.colors.info),
+                  ),
+                )
+              : Icon(icon, size: 18, color: gt.colors.textSecondary),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: 12, color: gt.colors.textSecondary),
             ),
           ),
         ],
@@ -244,6 +309,7 @@ class _ScanPane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final gt = GlassTheme.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -253,12 +319,12 @@ class _ScanPane extends StatelessWidget {
             onDetected: onScanned,
           ),
           const SizedBox(height: 16),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 32),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Text(
               '扫到对方二维码后会自动提交签到',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: 12, color: gt.colors.textSecondary),
             ),
           ),
         ],
