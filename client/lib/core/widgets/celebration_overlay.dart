@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/dazi_colors.dart';
-import '../theme/glass_theme.dart';
 
 /// 庆祝动画工具。通过静态方法在 Overlay 上展示。
 class CelebrationOverlay {
