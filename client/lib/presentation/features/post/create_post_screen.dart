@@ -1,16 +1,28 @@
 import 'dart:io';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/dazi_colors.dart';
+import '../../../core/theme/glass_theme.dart';
+import '../../../core/widgets/celebration_overlay.dart';
+import '../../../core/widgets/glass_button.dart';
+import '../../../core/widgets/glass_card.dart';
+import '../../../core/widgets/glass_input.dart';
+import '../../../core/widgets/glow_background.dart';
+import '../../../core/widgets/pill_tag.dart';
+import '../../../data/models/category_config.dart';
 import '../../../data/models/post.dart';
 import '../../../data/repositories/application_repository.dart';
 import '../../../data/repositories/auth_repository.dart';
+import '../../../data/repositories/category_repository.dart';
 import '../../../data/repositories/post_create_repository.dart';
+
+part 'create_post_quota.dart';
 
 /// 发布搭子表单页。
 ///
@@ -33,14 +45,8 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   bool _aiLoading = false;
   bool _genderQuotaEnabled = false;
 
-  static const _categories = [
-    ('吃喝', '🍜'),
-    ('运动', '🏃'),
-    ('文艺', '🎨'),
-    ('旅行', '✈️'),
-    ('学习', '📚'),
-    ('游戏', '🎮'),
-  ];
+  List<CategoryConfig> get _categories =>
+      ref.read(categoriesProvider).valueOrNull ?? const [];
 
   @override
   void initState() {
@@ -96,6 +102,9 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   }
 
   Future<void> _publish() async {
+    // debounce：防止按钮短时间内重复触发
+    if (_publishing) return;
+
     _draft.title = _titleController.text;
     _draft.description = _descController.text;
     _draft.locationName = _locationController.text;
@@ -110,24 +119,66 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     try {
       final repo = ref.read(postCreateRepositoryProvider);
 
-      // 并行上传图片
+      // 并行上传图片。逐张捕获错误，任一失败就整体中止并提示具体哪张
       if (_pendingImages.isNotEmpty) {
-        final urls = await Future.wait(_pendingImages.map(repo.uploadImage));
-        _draft.imageUrls = urls;
+        try {
+          final uploads = <Future<String>>[];
+          for (var i = 0; i < _pendingImages.length; i++) {
+            final idx = i;
+            uploads.add(
+              repo.uploadImage(_pendingImages[idx]).catchError((Object e) {
+                throw _ImageUploadException(idx + 1, e);
+              }),
+            );
+          }
+          _draft.imageUrls = await Future.wait(uploads, eagerError: true);
+        } on _ImageUploadException catch (e) {
+          if (!mounted) return;
+          _showSnack('第 ${e.index} 张图片上传失败，请重试：${_friendlyError(e.cause)}');
+          return;
+        }
       }
 
       final postId = await repo.publish(_draft);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('发布成功 🎉')),
-      );
+      await CelebrationOverlay.showJoinSuccess(context, title: '发布成功！');
+      if (!mounted) return;
       context.pushReplacement('/post/$postId');
+    } on FirebaseException catch (e) {
+      if (!mounted) return;
+      _showSnack('发布失败：${_friendlyFirebaseError(e)}');
     } catch (e) {
       if (!mounted) return;
-      _showSnack('发布失败：$e');
+      _showSnack('发布失败：${_friendlyError(e)}');
     } finally {
       if (mounted) setState(() => _publishing = false);
     }
+  }
+
+  /// 把 FirebaseException 转为用户友好的中文提示。
+  String _friendlyFirebaseError(FirebaseException e) {
+    switch (e.code) {
+      case 'unavailable':
+      case 'network-request-failed':
+      case 'deadline-exceeded':
+        return '网络不可用，请检查网络后重试';
+      case 'permission-denied':
+        return '权限不足';
+      case 'unauthenticated':
+        return '登录已过期，请重新登录';
+      default:
+        return e.message ?? e.code;
+    }
+  }
+
+  /// 通用错误友好化。
+  String _friendlyError(Object e) {
+    if (e is FirebaseException) return _friendlyFirebaseError(e);
+    final msg = e.toString();
+    if (msg.contains('SocketException') || msg.contains('Network is unreachable')) {
+      return '网络不可用，请检查网络';
+    }
+    return msg;
   }
 
   void _showSnack(String msg) {
@@ -146,9 +197,12 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               '说一句话，AI 会自动提取分类 / 标题 / 时间 / 地点等。',
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              style: TextStyle(
+                fontSize: 12,
+                color: GlassTheme.of(ctx).colors.textSecondary,
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -204,7 +258,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
       // category 可能是 "吃喝>喝咖啡"，取一级
       final rawCat = (data['category'] as String?) ?? '';
       final topCat = rawCat.split('>').first.trim();
-      if (_categories.any((c) => c.$1 == topCat)) {
+      if (_categories.any((c) => c.id == topCat)) {
         _draft.category = topCat;
       }
 
@@ -276,8 +330,13 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final gt = GlassTheme.of(context);
+    final colors = gt.colors;
+
     return Scaffold(
+      backgroundColor: colors.base,
       appBar: AppBar(
+        backgroundColor: colors.surface,
         title: const Text('发布搭子'),
         leading: IconButton(
           icon: const Icon(Icons.close),
@@ -297,155 +356,124 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _sectionLabel('分类 *'),
-            _buildCategoryPicker(),
-            _sectionLabel('标题 *'),
-            TextField(
-              controller: _titleController,
-              maxLength: 30,
-              decoration: const InputDecoration(
-                hintText: '例如：周末去静安寺喝咖啡',
+      body: GlowBackground(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _sectionLabel('分类 *', colors),
+              _buildCategoryPicker(colors),
+              _sectionLabel('标题 *', colors),
+              GlassInput(
+                controller: _titleController,
+                hint: '例如：周末去静安寺喝咖啡',
               ),
-            ),
-            _sectionLabel('图片（可选，最多 6 张）'),
-            _buildImagePicker(),
-            _sectionLabel('时间 *'),
-            _buildTimePicker(),
-            _sectionLabel('地点 *'),
-            TextField(
-              controller: _locationController,
-              decoration: const InputDecoration(
-                hintText: '例如：星巴克臻选·太古汇店',
-                prefixIcon: Icon(Icons.location_on_outlined),
+              _sectionLabel('图片（可选，最多 6 张）', colors),
+              _buildImagePicker(colors),
+              _sectionLabel('时间 *', colors),
+              _buildTimePicker(colors),
+              _sectionLabel('地点 *', colors),
+              GlassInput(
+                controller: _locationController,
+                hint: '例如：星巴克臻选·太古汇店',
+                prefix: Icon(Icons.location_on_outlined, color: colors.textSecondary),
               ),
-            ),
-            _sectionLabel('人数'),
-            _buildSlotsPicker(),
-            const SizedBox(height: 10),
-            _buildGenderQuotaSection(),
-            _sectionLabel('费用方式'),
-            _buildCostTypePicker(),
-            Padding(
-              padding: const EdgeInsets.only(top: 20, bottom: 10),
-              child: Row(
-                children: [
-                  const Text(
-                    '描述（可选）',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+              _sectionLabel('人数', colors),
+              _buildSlotsPicker(colors),
+              const SizedBox(height: 10),
+              _buildGenderQuotaSection(),
+              _sectionLabel('费用方式', colors),
+              _buildCostTypePicker(colors),
+              Padding(
+                padding: const EdgeInsets.only(top: 20, bottom: 10),
+                child: Row(
+                  children: [
+                    Text(
+                      '描述（可选）',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: colors.textPrimary,
+                      ),
                     ),
-                  ),
-                  const Spacer(),
-                  TextButton.icon(
-                    onPressed: _aiLoading ? null : _generateDescription,
-                    style: TextButton.styleFrom(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    const Spacer(),
+                    TextButton.icon(
+                      onPressed: _aiLoading ? null : _generateDescription,
+                      style: TextButton.styleFrom(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      icon: const Icon(Icons.auto_awesome, size: 16),
+                      label: const Text('AI 帮写',
+                          style: TextStyle(fontSize: 12)),
                     ),
-                    icon: const Icon(Icons.auto_awesome, size: 16),
-                    label: const Text('AI 帮写',
-                        style: TextStyle(fontSize: 12)),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            TextField(
-              controller: _descController,
-              maxLines: 4,
-              maxLength: 300,
-              decoration: const InputDecoration(
-                hintText: '介绍一下活动，吸引同好报名',
-                alignLabelWithHint: true,
+              GlassInput(
+                controller: _descController,
+                maxLines: 4,
+                hint: '介绍一下活动，吸引同好报名',
               ),
-            ),
-            const SizedBox(height: 8),
-            _buildSocialAnxietyToggle(),
-          ],
+              const SizedBox(height: 8),
+              _buildSocialAnxietyToggle(colors),
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: Container(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          border: Border(top: BorderSide(color: AppColors.border, width: 0.5)),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          border: Border(
+            top: BorderSide(color: colors.glassL1Border, width: 0.5),
+          ),
         ),
         child: SafeArea(
           top: false,
-          child: ElevatedButton(
+          child: GlassButton(
+            label: '发布',
+            variant: GlassButtonVariant.primary,
+            expand: true,
+            isLoading: _publishing,
             onPressed: _publishing ? null : _publish,
-            child: _publishing
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : const Text('发布'),
           ),
         ),
       ),
     );
   }
 
-  Widget _sectionLabel(String text) => Padding(
+  Widget _sectionLabel(String text, DaziColorScheme colors) => Padding(
         padding: const EdgeInsets.only(top: 20, bottom: 10),
         child: Text(
           text,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+            color: colors.textPrimary,
           ),
         ),
       );
 
-  Widget _buildCategoryPicker() {
+  Widget _buildCategoryPicker(DaziColorScheme colors) {
     return Wrap(
       spacing: 10,
       runSpacing: 10,
       children: _categories.map((c) {
-        final selected = _draft.category == c.$1;
-        return GestureDetector(
-          onTap: () => setState(() => _draft.category = c.$1),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: selected ? AppColors.primary : AppColors.surfaceAlt,
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(c.$2, style: const TextStyle(fontSize: 16)),
-                const SizedBox(width: 6),
-                Text(
-                  c.$1,
-                  style: TextStyle(
-                    color: selected ? Colors.white : AppColors.textPrimary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
+        final selected = _draft.category == c.id;
+        return PillTag(
+          label: '${c.emoji} ${c.label}',
+          selected: selected,
+          onTap: () => setState(() => _draft.category = c.id),
         );
       }).toList(),
     );
   }
 
-  Widget _buildImagePicker() {
+  Widget _buildImagePicker(DaziColorScheme colors) {
     return SizedBox(
       height: 88,
       child: ListView.separated(
@@ -454,31 +482,35 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (_, i) {
           if (i == _pendingImages.length) {
-            return GestureDetector(
-              onTap: _pickImages,
-              child: Container(
-                width: 88,
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceAlt,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.border,
-                    style: BorderStyle.solid,
-                  ),
-                ),
-                child: const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.add, color: AppColors.textTertiary),
-                    SizedBox(height: 4),
-                    Text(
-                      '添加',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textTertiary,
-                      ),
+            return Semantics(
+              button: true,
+              label: '添加图片',
+              child: GestureDetector(
+                onTap: _pickImages,
+                child: Container(
+                  width: 88,
+                  decoration: BoxDecoration(
+                    color: colors.glassL1Bg,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: colors.glassL1Border,
+                      style: BorderStyle.solid,
                     ),
-                  ],
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add, color: colors.textTertiary),
+                      const SizedBox(height: 4),
+                      Text(
+                        '添加',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: colors.textTertiary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -497,18 +529,22 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
               Positioned(
                 right: 4,
                 top: 4,
-                child: GestureDetector(
-                  onTap: () =>
-                      setState(() => _pendingImages.removeAt(i)),
-                  child: Container(
-                    width: 22,
-                    height: 22,
-                    decoration: const BoxDecoration(
-                      color: Colors.black54,
-                      shape: BoxShape.circle,
+                child: Semantics(
+                  button: true,
+                  label: '删除图片',
+                  child: GestureDetector(
+                    onTap: () =>
+                        setState(() => _pendingImages.removeAt(i)),
+                    child: Container(
+                      width: 22,
+                      height: 22,
+                      decoration: const BoxDecoration(
+                        color: Colors.black54,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.close,
+                          size: 14, color: Colors.white),
                     ),
-                    child: const Icon(Icons.close,
-                        size: 14, color: Colors.white),
                   ),
                 ),
               ),
@@ -519,65 +555,60 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     );
   }
 
-  Widget _buildTimePicker() {
+  Widget _buildTimePicker(DaziColorScheme colors) {
     final hasTime = _draft.time != null;
-    return InkWell(
+    return GlassCard(
+      level: 1,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       onTap: _pickTime,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceAlt,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.schedule, color: AppColors.textSecondary),
-            const SizedBox(width: 12),
-            Text(
-              hasTime
-                  ? DateFormat('M月d日 HH:mm').format(_draft.time!)
-                  : '选择活动时间',
-              style: TextStyle(
-                fontSize: 15,
-                color: hasTime
-                    ? AppColors.textPrimary
-                    : AppColors.textTertiary,
-              ),
+      child: Row(
+        children: [
+          Icon(Icons.schedule, color: colors.textSecondary),
+          const SizedBox(width: 12),
+          Text(
+            hasTime
+                ? DateFormat('M月d日 HH:mm').format(_draft.time!)
+                : '选择活动时间',
+            style: TextStyle(
+              fontSize: 15,
+              color: hasTime
+                  ? colors.textPrimary
+                  : colors.textTertiary,
             ),
-            const Spacer(),
-            const Icon(Icons.chevron_right, color: AppColors.textTertiary),
-          ],
-        ),
+          ),
+          const Spacer(),
+          Icon(Icons.chevron_right, color: colors.textTertiary),
+        ],
       ),
     );
   }
 
-  Widget _buildSlotsPicker() {
-    return Container(
+  Widget _buildSlotsPicker(DaziColorScheme colors) {
+    return GlassCard(
+      level: 1,
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceAlt,
-        borderRadius: BorderRadius.circular(14),
-      ),
       child: Row(
         children: [
-          const Text('总人数', style: TextStyle(fontSize: 14)),
+          Text('总人数', style: TextStyle(fontSize: 14, color: colors.textPrimary)),
           const Spacer(),
           IconButton(
             icon: const Icon(Icons.remove_circle_outline),
-            color: AppColors.primary,
+            color: colors.primary,
             onPressed: _draft.totalSlots > 2
                 ? () => setState(() => _draft.totalSlots--)
                 : null,
           ),
           Text(
             '${_draft.totalSlots}',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: colors.textPrimary,
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.add_circle_outline),
-            color: AppColors.primary,
+            color: colors.primary,
             onPressed: _draft.totalSlots < 50
                 ? () => setState(() => _draft.totalSlots++)
                 : null,
@@ -587,173 +618,46 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     );
   }
 
-  Widget _buildGenderQuotaSection() {
-    final male = _draft.maleQuota ?? 0;
-    final female = _draft.femaleQuota ?? 0;
-    final total = _draft.totalSlots;
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(18, 8, 18, 16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceAlt,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Text('性别配额', style: TextStyle(fontSize: 14)),
-              const SizedBox(width: 6),
-              const Text(
-                '（可选）',
-                style: TextStyle(fontSize: 11, color: AppColors.textTertiary),
-              ),
-              const Spacer(),
-              Switch(
-                value: _genderQuotaEnabled,
-                activeColor: AppColors.primary,
-                onChanged: (v) => setState(() {
-                  _genderQuotaEnabled = v;
-                  if (v) {
-                    _draft.maleQuota = (total / 2).floor();
-                    _draft.femaleQuota = total - _draft.maleQuota!;
-                  } else {
-                    _draft.maleQuota = null;
-                    _draft.femaleQuota = null;
-                  }
-                }),
-              ),
-            ],
-          ),
-          if (_genderQuotaEnabled) ...[
-            _quotaSlider(
-              label: '男生',
-              icon: Icons.male,
-              value: male,
-              total: total,
-              onChanged: (v) => setState(() {
-                _draft.maleQuota = v;
-                if (v + (_draft.femaleQuota ?? 0) > total) {
-                  _draft.femaleQuota = total - v;
-                }
-              }),
-            ),
-            _quotaSlider(
-              label: '女生',
-              icon: Icons.female,
-              value: female,
-              total: total,
-              onChanged: (v) => setState(() {
-                _draft.femaleQuota = v;
-                if (v + (_draft.maleQuota ?? 0) > total) {
-                  _draft.maleQuota = total - v;
-                }
-              }),
-            ),
-            Text(
-              '合计 ${male + female} / $total',
-              style: const TextStyle(
-                fontSize: 11,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _quotaSlider({
-    required String label,
-    required IconData icon,
-    required int value,
-    required int total,
-    required ValueChanged<int> onChanged,
-  }) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: AppColors.textSecondary),
-        const SizedBox(width: 4),
-        SizedBox(
-          width: 32,
-          child: Text(label, style: const TextStyle(fontSize: 12)),
-        ),
-        Expanded(
-          child: Slider(
-            value: value.toDouble(),
-            min: 0,
-            max: total.toDouble(),
-            divisions: total,
-            label: '$value',
-            activeColor: AppColors.primary,
-            onChanged: (v) => onChanged(v.round()),
-          ),
-        ),
-        SizedBox(
-          width: 24,
-          child: Text(
-            '$value',
-            textAlign: TextAlign.end,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCostTypePicker() {
+  Widget _buildCostTypePicker(DaziColorScheme colors) {
     return Wrap(
       spacing: 10,
       runSpacing: 10,
       children: CostType.values.map((t) {
         final selected = _draft.costType == t;
-        return GestureDetector(
+        return PillTag(
+          label: t.label,
+          selected: selected,
           onTap: () => setState(() => _draft.costType = t),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: selected ? AppColors.primary : AppColors.surfaceAlt,
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              t.label,
-              style: TextStyle(
-                color: selected ? Colors.white : AppColors.textPrimary,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
         );
       }).toList(),
     );
   }
 
-  Widget _buildSocialAnxietyToggle() {
-    return Container(
+  Widget _buildSocialAnxietyToggle(DaziColorScheme colors) {
+    return GlassCard(
+      level: 1,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceAlt,
-        borderRadius: BorderRadius.circular(14),
-      ),
       child: Row(
         children: [
           const Text('🫣', style: TextStyle(fontSize: 22)),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   '社恐友好',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary,
+                  ),
                 ),
                 Text(
                   '小群 / 不强迫自我介绍',
                   style: TextStyle(
                     fontSize: 11,
-                    color: AppColors.textSecondary,
+                    color: colors.textSecondary,
                   ),
                 ),
               ],
@@ -763,10 +667,20 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
             value: _draft.isSocialAnxietyFriendly,
             onChanged: (v) =>
                 setState(() => _draft.isSocialAnxietyFriendly = v),
-            activeColor: AppColors.primary,
+            activeColor: colors.primary,
           ),
         ],
       ),
     );
   }
+}
+
+/// 内部异常：标记是哪一张图片上传失败（index 从 1 开始，用于提示）。
+class _ImageUploadException implements Exception {
+  _ImageUploadException(this.index, this.cause);
+  final int index;
+  final Object cause;
+
+  @override
+  String toString() => 'Image #$index upload failed: $cause';
 }
