@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/glass_theme.dart';
+import '../../../core/theme/spacing.dart';
+import '../../../core/widgets/glow_background.dart';
+import '../../../core/widgets/glass_input.dart';
+import '../../../core/widgets/glass_button.dart';
 import '../../../data/repositories/auth_repository.dart';
 
 class PhoneVerifyScreen extends ConsumerStatefulWidget {
@@ -43,81 +46,96 @@ class _PhoneVerifyScreenState extends ConsumerState<PhoneVerifyScreen> {
   }
 
   String get _maskedPhone {
-    if (widget.phone.length < 11) return widget.phone;
-    return '${widget.phone.substring(0, 3)}****${widget.phone.substring(7)}';
+    final p = widget.phone;
+    if (p.length < 6) return p;
+    // 保留前段（国家码+前几位）和后 4 位，中间用 **** 替代
+    final visibleEnd = p.substring(p.length - 4);
+    final visibleStart = p.substring(0, p.length - 8 > 0 ? p.length - 8 : 3);
+    return '$visibleStart****$visibleEnd';
   }
 
   @override
   Widget build(BuildContext context) {
+    final gt = GlassTheme.of(context);
     return Scaffold(
+      backgroundColor: gt.colors.base,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new,
+              size: 20, color: gt.colors.textPrimary),
           onPressed: () => context.pop(),
         ),
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 16),
-              Text('验证码已发送', style: Theme.of(context).textTheme.displayLarge),
-              const SizedBox(height: 8),
-              Text(
-                '已向 +86 $_maskedPhone 发送 6 位验证码',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyLarge
-                    ?.copyWith(color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 40),
-              TextField(
-                controller: _codeController,
-                autofocus: true,
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(6),
-                ],
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 28,
-                  letterSpacing: 12,
-                  fontWeight: FontWeight.w700,
+      body: GlowBackground(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+                Spacing.space24, Spacing.space24, Spacing.space24, Spacing.space24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: Spacing.space16),
+                Text(
+                  '验证码已发送',
+                  style: Theme.of(context)
+                      .textTheme
+                      .displayLarge
+                      ?.copyWith(color: gt.colors.textPrimary),
                 ),
-                decoration: const InputDecoration(hintText: '------'),
-                onChanged: (v) {
-                  setState(() {});
-                  if (v.length == 6) _submit();
-                },
-              ),
-              const Spacer(),
-              ElevatedButton(
-                onPressed: _verifying || _codeController.text.length != 6
-                    ? null
-                    : _submit,
-                child: _verifying
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : const Text('验证并登录'),
-              ),
-              const SizedBox(height: 12),
-              TextButton(
-                onPressed: () => context.pop(),
-                child: const Text(
-                  '没收到？重新发送',
-                  style: TextStyle(color: AppColors.textSecondary),
+                const SizedBox(height: Spacing.space8),
+                Text(
+                  '已向 $_maskedPhone 发送 6 位验证码',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyLarge
+                      ?.copyWith(color: gt.colors.textSecondary),
                 ),
-              ),
-            ],
+                const SizedBox(height: 40),
+                GlassInput(
+                  controller: _codeController,
+                  hint: '------',
+                  keyboardType: TextInputType.number,
+                  autofocus: true,
+                  onChanged: (v) {
+                    setState(() {});
+                    if (v.length == 6) _submit();
+                  },
+                ),
+                const SizedBox(height: Spacing.space16),
+                // Countdown / resend hint
+                Center(
+                  child: Text(
+                    '没收到验证码？稍后可重新发送',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: gt.colors.textAccent,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                GlassButton(
+                  label: '验证并登录',
+                  variant: GlassButtonVariant.primary,
+                  isLoading: _verifying,
+                  expand: true,
+                  onPressed: _verifying || _codeController.text.length != 6
+                      ? null
+                      : _submit,
+                ),
+                const SizedBox(height: Spacing.space12),
+                Center(
+                  child: TextButton(
+                    onPressed: () => context.pop(),
+                    child: Text(
+                      '没收到？重新发送',
+                      style: TextStyle(color: gt.colors.textSecondary),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
