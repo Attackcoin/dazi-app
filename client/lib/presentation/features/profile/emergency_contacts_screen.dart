@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/glass_theme.dart';
+import '../../../core/theme/spacing.dart';
+import '../../../core/widgets/glass_button.dart';
+import '../../../core/widgets/glass_card.dart';
+import '../../../core/widgets/glass_input.dart';
+import '../../../core/widgets/glow_background.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/user_repository.dart';
 
@@ -45,6 +50,7 @@ class _EmergencyContactsScreenState
     final result = await showModalBottomSheet<Map<String, String>>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (ctx) => _ContactEditSheet(initial: existing),
     );
     if (result == null) return;
@@ -59,6 +65,7 @@ class _EmergencyContactsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final gt = GlassTheme.of(context);
     final userAsync = ref.watch(currentAppUserProvider);
     final user = userAsync.valueOrNull;
 
@@ -69,61 +76,71 @@ class _EmergencyContactsScreenState
       _initialized = true;
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('紧急联系人'),
-        actions: [
-          TextButton(
-            onPressed: _saving ? null : _save,
-            child: _saving
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('保存'),
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(8),
+    return GlowBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          title: const Text('紧急联系人'),
+          actions: [
+            TextButton(
+              onPressed: _saving ? null : _save,
+              child: _saving
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('保存'),
             ),
-            child: const Row(
-              children: [
-                Icon(Icons.info_outline,
-                    size: 16, color: AppColors.primary),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '见面遇到异常时，系统会通知这些联系人（最多 3 位）',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
+          ],
+        ),
+        body: ListView(
+          padding: const EdgeInsets.all(Spacing.space20),
+          children: [
+            // 提示信息
+            GlassCard(
+              level: 1,
+              padding: const EdgeInsets.all(Spacing.space12),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 16,
+                    color: gt.colors.primary,
+                  ),
+                  const SizedBox(width: Spacing.space8),
+                  Expanded(
+                    child: Text(
+                      '见面遇到异常时，系统会通知这些联系人（最多 3 位）',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: gt.colors.textSecondary,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          ..._contacts.asMap().entries.map((e) => _ContactTile(
-                contact: e.value,
-                onTap: () => _addOrEdit(index: e.key),
-                onDelete: () => setState(() => _contacts.removeAt(e.key)),
-              )),
-          if (_contacts.length < 3)
-            OutlinedButton.icon(
-              onPressed: () => _addOrEdit(),
-              icon: const Icon(Icons.add),
-              label: const Text('添加联系人'),
-            ),
-        ],
+            const SizedBox(height: Spacing.space16),
+            ..._contacts.asMap().entries.map((e) => Padding(
+                  padding: const EdgeInsets.only(bottom: Spacing.space8),
+                  child: _ContactTile(
+                    contact: e.value,
+                    onTap: () => _addOrEdit(index: e.key),
+                    onDelete: () => setState(() => _contacts.removeAt(e.key)),
+                  ),
+                )),
+            if (_contacts.length < 3)
+              GlassButton(
+                label: '添加联系人',
+                variant: GlassButtonVariant.secondary,
+                icon: Icons.add,
+                expand: true,
+                onPressed: () => _addOrEdit(),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -142,22 +159,27 @@ class _ContactTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
+    final gt = GlassTheme.of(context);
+    return GlassCard(
+      level: 1,
+      onTap: onTap,
       child: ListTile(
-        leading: const CircleAvatar(
-          backgroundColor: AppColors.surfaceAlt,
-          child: Icon(Icons.person, color: AppColors.textSecondary),
+        leading: CircleAvatar(
+          backgroundColor: gt.colors.glassL2Bg,
+          child: Icon(Icons.person, color: gt.colors.textSecondary),
         ),
-        title: Text(contact['name'] ?? ''),
+        title: Text(
+          contact['name'] ?? '',
+          style: TextStyle(color: gt.colors.textPrimary),
+        ),
         subtitle: Text(
           '${contact['relation'] ?? ''}  ${contact['phone'] ?? ''}',
+          style: TextStyle(color: gt.colors.textSecondary),
         ),
         trailing: IconButton(
-          icon: const Icon(Icons.delete_outline, color: AppColors.error),
+          icon: Icon(Icons.delete_outline, color: gt.colors.error),
           onPressed: onDelete,
         ),
-        onTap: onTap,
       ),
     );
   }
@@ -190,35 +212,54 @@ class _ContactEditSheetState extends State<_ContactEditSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final gt = GlassTheme.of(context);
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
+    return GlassCard(
+      level: 1,
+      useBlur: true,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      padding: EdgeInsets.fromLTRB(
+        Spacing.space20,
+        Spacing.space20,
+        Spacing.space20,
+        Spacing.space20 + bottomInset,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
+          Text(
             '紧急联系人',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: gt.colors.textPrimary,
+            ),
           ),
-          const SizedBox(height: 16),
-          TextField(
+          const SizedBox(height: Spacing.space16),
+          GlassInput(
             controller: _nameCtrl,
-            decoration: const InputDecoration(labelText: '姓名'),
+            label: '姓名',
+            hint: '请输入姓名',
           ),
-          const SizedBox(height: 12),
-          TextField(
+          const SizedBox(height: Spacing.space12),
+          GlassInput(
             controller: _phoneCtrl,
+            label: '电话',
+            hint: '请输入电话号码',
             keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(labelText: '电话'),
           ),
-          const SizedBox(height: 12),
-          TextField(
+          const SizedBox(height: Spacing.space12),
+          GlassInput(
             controller: _relationCtrl,
-            decoration: const InputDecoration(labelText: '关系（如：父母、朋友）'),
+            label: '关系',
+            hint: '如：父母、朋友',
           ),
-          const SizedBox(height: 20),
-          ElevatedButton(
+          const SizedBox(height: Spacing.space20),
+          GlassButton(
+            label: '确定',
+            variant: GlassButtonVariant.primary,
+            expand: true,
             onPressed: () {
               if (_nameCtrl.text.trim().isEmpty ||
                   _phoneCtrl.text.trim().isEmpty) {
@@ -233,7 +274,6 @@ class _ContactEditSheetState extends State<_ContactEditSheet> {
                 'relation': _relationCtrl.text.trim(),
               });
             },
-            child: const Text('确定'),
           ),
         ],
       ),
