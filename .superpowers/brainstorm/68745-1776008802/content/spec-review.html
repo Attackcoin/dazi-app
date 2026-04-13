@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>搭子 App — Glass Morph UI Spec</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0F0A1A; color:rgba(255,255,255,0.85); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; line-height:1.6; }
+  .container { max-width:900px; margin:0 auto; padding:32px 24px 80px; }
+
+  h1 { font-size:28px; font-weight:700; color:#fff; margin-bottom:4px; }
+  .subtitle { color:rgba(255,255,255,0.4); font-size:14px; margin-bottom:32px; }
+  h2 { font-size:20px; font-weight:700; color:#FF8AB4; margin:40px 0 16px; padding-bottom:8px; border-bottom:1px solid rgba(255,107,157,0.15); }
+  h3 { font-size:15px; font-weight:600; color:rgba(255,255,255,0.9); margin:24px 0 12px; }
+
+  .badge { display:inline-block; background:rgba(255,107,157,0.15); border:1px solid rgba(255,107,157,0.25); color:#FF8AB4; font-size:11px; padding:3px 10px; border-radius:8px; margin-right:6px; }
+  .badge-purple { background:rgba(168,85,247,0.15); border-color:rgba(168,85,247,0.25); color:#C084FC; }
+  .badge-green { background:rgba(16,185,129,0.15); border-color:rgba(16,185,129,0.25); color:#34D399; }
+
+  table { width:100%; border-collapse:collapse; margin:12px 0; font-size:13px; }
+  th { text-align:left; color:rgba(255,255,255,0.5); font-weight:500; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; padding:8px 12px; border-bottom:1px solid rgba(255,255,255,0.08); }
+  td { padding:8px 12px; border-bottom:1px solid rgba(255,255,255,0.04); color:rgba(255,255,255,0.7); }
+  tr:hover td { background:rgba(255,255,255,0.02); }
+  code { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); border-radius:4px; padding:1px 6px; font-size:12px; color:#FF8AB4; font-family:'Fira Code',monospace; }
+
+  .glass-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); border-radius:16px; padding:20px; margin:12px 0; }
+  .glass-card-l2 { background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.10); }
+
+  .color-row { display:flex; gap:12px; margin:8px 0; flex-wrap:wrap; }
+  .color-swatch { text-align:center; flex:1; min-width:80px; }
+  .color-swatch .swatch { height:48px; border-radius:10px; margin-bottom:6px; border:1px solid rgba(255,255,255,0.06); }
+  .color-swatch .label { font-size:10px; color:rgba(255,255,255,0.4); }
+
+  .split { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:12px 0; }
+  @media (max-width:700px) { .split { grid-template-columns:1fr; } }
+
+  .anim-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:12px 0; }
+  .anim-item { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:14px; }
+  .anim-item .title { color:#FF8AB4; font-size:12px; font-weight:600; margin-bottom:6px; }
+  .anim-item .desc { color:rgba(255,255,255,0.5); font-size:11px; line-height:1.5; }
+
+  .page-list { display:flex; flex-direction:column; gap:6px; }
+  .page-item { display:flex; align-items:center; gap:12px; padding:8px 12px; background:rgba(255,255,255,0.03); border-radius:10px; border:1px solid rgba(255,255,255,0.04); }
+  .page-item:hover { background:rgba(255,255,255,0.05); }
+  .page-num { width:24px; height:24px; border-radius:12px; background:rgba(255,107,157,0.15); color:#FF8AB4; font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .page-name { color:rgba(255,255,255,0.85); font-size:13px; font-weight:500; min-width:80px; }
+  .page-file { color:rgba(255,255,255,0.35); font-size:10px; font-family:monospace; }
+  .page-desc { color:rgba(255,255,255,0.5); font-size:11px; margin-left:auto; text-align:right; }
+
+  ul { padding-left:20px; }
+  li { color:rgba(255,255,255,0.6); font-size:13px; margin:4px 0; }
+  li strong { color:rgba(255,255,255,0.85); }
+
+  .toc { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:16px 20px; margin:20px 0; }
+  .toc a { color:#FF8AB4; text-decoration:none; font-size:13px; line-height:2; }
+  .toc a:hover { text-decoration:underline; }
+
+  .rule-item { display:flex; align-items:flex-start; gap:10px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.04); }
+  .rule-num { width:24px; height:24px; border-radius:12px; background:rgba(239,68,68,0.15); color:#F87171; font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .rule-text { color:rgba(255,255,255,0.7); font-size:12px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>搭子 App — Glass Morph UI 全面升级</h1>
+  <p class="subtitle">设计规范文档 · 2026-04-12 · 覆盖全部 21 个页面</p>
+
+  <div class="toc">
+    <div><a href="#s1">1. 设计方向</a></div>
+    <div><a href="#s2">2. 色彩系��</a></div>
+    <div><a href="#s3">3. 核心组件</a></div>
+    <div><a href="#s4">4. 动��系统</a></div>
+    <div><a href="#s5">5. 页面清单</a></div>
+    <div><a href="#s6">6. 实现架构</a></div>
+    <div><a href="#s7">7. 排版 & 间距</a></div>
+    <div><a href="#s8">8. 设计规则</a></div>
+  </div>
+
+  <!-- 1. 设计方向 -->
+  <h2 id="s1">1. 设计方向</h2>
+  <div class="glass-card">
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
+      <span class="badge">活力潮流</span>
+      <span class="badge-purple badge">Glass Morph</span>
+      <span class="badge-green badge">��色优先</span>
+      <span class="badge">重度动画</span>
+      <span class="badge-purple badge">双色系</span>
+    </div>
+    <table>
+      <tr><td style="width:120px;color:rgba(255,255,255,0.5);">视觉方案</td><td>玻璃拟态 — 深色底 + 磨砂玻璃 + 彩色光斑</td></tr>
+      <tr><td style="color:rgba(255,255,255,0.5);">暗色基底</td><td>偏紫暖调 <code>#0F0A1A</code> → <code>#1A1025</code></td></tr>
+      <tr><td style="color:rgba(255,255,255,0.5);">目标用户</td><td>20-35 核心，平衡趣味和实用</td></tr>
+      <tr><td style="color:rgba(255,255,255,0.5);">首页结构</td><td>双入口：滑一滑(随机探索) + 发现(精准筛选)</td></tr>
+      <tr><td style="color:rgba(255,255,255,0.5);">PostCard</td><td>+ 发布者头像昵称 + 参与者头像��</td></tr>
+      <tr><td style="color:rgba(255,255,255,0.5);">品牌元素</td><td>图形 logo（抽象连接符号），国际化</td></tr>
+    </table>
+  </div>
+
+  <!-- 2. 色彩系统 -->
+  <h2 id="s2">2. 色彩系统</h2>
+
+  <h3>🌙 暗色模式（默认）</h3>
+  <div class="glass-card">
+    <div style="color:rgba(255,255,255,0.4);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">背景画布</div>
+    <div class="color-row">
+      <div class="color-swatch"><div class="swatch" style="background:#0F0A1A;"></div><div class="label">base #0F0A1A</div></div>
+      <div class="color-swatch"><div class="swatch" style="background:#1A1025;"></div><div class="label">surface #1A1025</div></div>
+      <div class="color-swatch"><div class="swatch" style="background:#241830;"></div><div class="label">elevated #241830</div></div>
+    </div>
+
+    <div style="color:rgba(255,255,255,0.4);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin:16px 0 10px;">玻璃层级</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;"><span>L1 卡片</span><span style="color:rgba(255,255,255,0.3);font-size:11px;">4% white · 6% border</span></div>
+      <div style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.10);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;"><span>L2 浮层</span><span style="color:rgba(255,255,255,0.3);font-size:11px;">8% white · 10% border</span></div>
+      <div style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.15);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;"><span>L3 输入/选中</span><span style="color:rgba(255,255,255,0.3);font-size:11px;">12% white · 15% border</span></div>
+    </div>
+
+    <div style="color:rgba(255,255,255,0.4);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin:16px 0 10px;">强调色</div>
+    <div class="color-row">
+      <div class="color-swatch"><div class="swatch" style="background:linear-gradient(135deg,#FF6B9D,#FF8AB4);box-shadow:0 4px 16px rgba(255,107,157,0.3);"></div><div class="label">primary #FF6B9D</div></div>
+      <div class="color-swatch"><div class="swatch" style="background:linear-gradient(135deg,#A855F7,#C084FC);box-shadow:0 4px 16px rgba(168,85,247,0.3);"></div><div class="label">accent #A855F7</div></div>
+      <div class="color-swatch"><div class="swatch" style="background:linear-gradient(135deg,#3B82F6,#60A5FA);box-shadow:0 4px 16px rgba(59,130,246,0.3);"></div><div class="label">info #3B82F6</div></div>
+      <div class="color-swatch"><div class="swatch" style="background:linear-gradient(135deg,#10B981,#34D399);box-shadow:0 4px 16px rgba(16,185,129,0.3);"></div><div class="label">success #10B981</div></div>
+      <div class="color-swatch"><div class="swatch" style="background:linear-gradient(135deg,#EF4444,#F87171);box-shadow:0 4px 16px rgba(239,68,68,0.3);"></div><div class="label">error #EF4444</div></div>
+    </div>
+
+    <div style="color:rgba(255,255,255,0.4);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin:16px 0 10px;">渐变</div>
+    <div class="color-row">
+      <div class="color-swatch" style="flex:2;"><div class="swatch" style="background:linear-gradient(135deg,#FF8A65,#FF6B9D,#A855F7);height:36px;"></div><div class="label">heroGradient — CTA 按钮</div></div>
+      <div class="color-swatch" style="flex:2;"><div class="swatch" style="background:linear-gradient(135deg,rgba(255,107,157,0.2),rgba(168,85,247,0.2));height:36px;"></div><div class="label">cardGlowGradient — 卡片占位</div></div>
+    </div>
+
+    <div style="color:rgba(255,255,255,0.4);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin:16px 0 10px;">文字</div>
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.95);font-weight:700;">标题 95%</span><span style="color:rgba(255,255,255,0.3);font-size:11px;">textPrimary</span></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.70);">正文 70%</span><span style="color:rgba(255,255,255,0.3);font-size:11px;">textSecondary</span></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.40);">辅助 40%</span><span style="color:rgba(255,255,255,0.3);font-size:11px;">textTertiary</span></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:#FF8AB4;">链接/可点击</span><span style="color:rgba(255,255,255,0.3);font-size:11px;">textAccent</span></div>
+    </div>
+  </div>
+
+  <h3>☀️ 亮色模式</h3>
+  <div class="glass-card" style="background:rgba(248,245,255,0.95);border-color:rgba(0,0,0,0.08);">
+    <div class="color-row">
+      <div class="color-swatch"><div class="swatch" style="background:#F8F5FF;border-color:rgba(0,0,0,0.08);"></div><div class="label" style="color:rgba(0,0,0,0.4);">base #F8F5FF</div></div>
+      <div class="color-swatch"><div class="swatch" style="background:#FFFFFF;border-color:rgba(0,0,0,0.06);box-shadow:0 1px 3px rgba(0,0,0,0.05);"></div><div class="label" style="color:rgba(0,0,0,0.4);">surface #FFF</div></div>
+      <div class="color-swatch"><div class="swatch" style="background:#FFFFFF;border-color:rgba(0,0,0,0.06);box-shadow:0 2px 8px rgba(0,0,0,0.06);"></div><div class="label" style="color:rgba(0,0,0,0.4);">elevated #FFF+shadow</div></div>
+    </div>
+    <div style="margin-top:12px;display:flex;flex-direction:column;gap:4px;">
+      <div style="display:flex;justify-content:space-between;"><span style="color:rgba(0,0,0,0.9);font-weight:700;">标题 90%</span><span style="color:rgba(0,0,0,0.3);font-size:11px;">textPrimary</span></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:rgba(0,0,0,0.6);">正文 60%</span><span style="color:rgba(0,0,0,0.3);font-size:11px;">textSecondary</span></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:rgba(0,0,0,0.35);">辅助 35%</span><span style="color:rgba(0,0,0,0.3);font-size:11px;">textTertiary</span></div>
+    </div>
+  </div>
+
+  <!-- 3. 核心组件 -->
+  <h2 id="s3">3. 核心组件</h2>
+
+  <h3>PostCard</h3>
+  <div class="glass-card">
+    <div style="font-size:12px;color:rgba(255,255,255,0.5);line-height:1.8;">
+      <strong style="color:rgba(255,255,255,0.8);">结构：</strong>图片区(160px) → 分类标签浮在图片上 → 发布者行(头像28px+昵称+时间) → 标题(2行) → 时间+地点 → 头像墙(4个+N) + 渐变加入按钮<br/>
+      <strong style="color:rgba(255,255,255,0.8);">背景：</strong><code>glassL1</code><br/>
+      <strong style="color:rgba(255,255,255,0.8);">交互：</strong>点击缩小0.97 → 弹簧弹回(200ms) · Hero图片→详情页
+    </div>
+  </div>
+
+  <h3>底部导航栏</h3>
+  <div class="glass-card">
+    <div style="font-size:12px;color:rgba(255,255,255,0.5);line-height:1.8;">
+      <strong style="color:rgba(255,255,255,0.8);">背景：</strong><code>rgba(base,0.85)</code> + <code>BackdropFilter(blur:20)</code> 真blur<br/>
+      <strong style="color:rgba(255,255,255,0.8);">布局：</strong>滑一滑 | 发现 | [渐变发布48x48] | 消息 | 我的<br/>
+      <strong style="color:rgba(255,255,255,0.8);">选中态：</strong>primary色 + drop-shadow发光 + 顶部3px光条(滑动过渡)<br/>
+      <strong style="color:rgba(255,255,255,0.8);">红点：</strong>8x8, primary色 + 发光阴影
+    </div>
+  </div>
+
+  <h3>按钮系��</h3>
+  <div class="glass-card">
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="background:linear-gradient(135deg,#FF6B9D,#A855F7);color:#fff;font-size:12px;padding:8px 24px;border-radius:14px;font-weight:600;box-shadow:0 4px 16px rgba(255,107,157,0.3);">Primary</div>
+        <span style="color:rgba(255,255,255,0.4);font-size:11px;">渐变 + 发光</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="background:rgba(255,107,157,0.12);border:1px solid rgba(255,107,157,0.25);color:#FF8AB4;font-size:12px;padding:8px 24px;border-radius:14px;font-weight:600;">Secondary</div>
+        <span style="color:rgba(255,255,255,0.4);font-size:11px;">半透明 + 色彩边框</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);font-size:12px;padding:8px 24px;border-radius:14px;">Ghost</div>
+        <span style="color:rgba(255,255,255,0.4);font-size:11px;">玻璃 + 白色边框</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);color:#F87171;font-size:12px;padding:8px 24px;border-radius:14px;font-weight:600;">Danger</div>
+        <span style="color:rgba(255,255,255,0.4);font-size:11px;">红色半透明</span>
+      </div>
+    </div>
+  </div>
+
+  <h3>其他组件</h3>
+  <div class="split">
+    <div class="glass-card">
+      <div style="color:rgba(255,255,255,0.5);font-size:10px;text-transform:uppercase;margin-bottom:8px;">输入框 (3态)</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,0.3);font-size:11px;">Normal — 请输入...</div>
+        <div style="background:rgba(255,107,157,0.06);border:1px solid rgba(255,107,157,0.3);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,0.9);font-size:11px;box-shadow:0 0 12px rgba(255,107,157,0.1);">Focused — 已输入内容</div>
+        <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,0.5);font-size:11px;">Error — 输入有误</div>
+      </div>
+    </div>
+    <div class="glass-card">
+      <div style="color:rgba(255,255,255,0.5);font-size:10px;text-transform:uppercase;margin-bottom:8px;">聊天气泡</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;gap:6px;align-items:flex-start;">
+          <div style="width:22px;height:22px;border-radius:11px;background:linear-gradient(135deg,#3B82F6,#06B6D4);flex-shrink:0;"></div>
+          <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:4px 12px 12px 12px;padding:8px 12px;color:rgba(255,255,255,0.7);font-size:11px;">他人的消息</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="display:inline-block;background:linear-gradient(135deg,rgba(255,107,157,0.2),rgba(168,85,247,0.2));border:1px solid rgba(255,107,157,0.15);border-radius:12px 4px 12px 12px;padding:8px 12px;color:rgba(255,255,255,0.9);font-size:11px;">自己的消息</div>
+        </div>
+        <div style="text-align:center;">
+          <span style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:3px 10px;font-size:9px;color:rgba(255,255,255,0.3);">系统消息</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. 动画系统 -->
+  <h2 id="s4">4. 动画系统</h2>
+
+  <h3>层级 1：微交互 Micro</h3>
+  <div class="anim-grid">
+    <div class="anim-item"><div class="title">按钮按压</div><div class="desc">scale 0.95→1.0 · 120ms easeOut</div></div>
+    <div class="anim-item"><div class="title">卡片按压</div><div class="desc">scale 0.97→1.0 + border亮 · 200ms spring</div></div>
+    <div class="anim-item"><div class="title">Tab 光条</div><div class="desc">translateX 滑动 · 250ms easeInOut</div></div>
+    <div class="anim-item"><div class="title">触觉反馈</div><div class="desc">轻触/阈值/成功 三级 HapticFeedback</div></div>
+  </div>
+
+  <h3>层级 2：列表动画 List</h3>
+  <div class="anim-grid">
+    <div class="anim-item"><div class="title">列表入场</div><div class="desc">20px淡入上滑 · 350ms · i*50ms错位</div></div>
+    <div class="anim-item"><div class="title">骨架屏</div><div class="desc">shimmer光带 · 1500ms循环</div></div>
+    <div class="anim-item"><div class="title">下拉刷新</div><div class="desc">品牌logo旋转放大 · 阈值80px</div></div>
+    <div class="anim-item"><div class="title">空状态</div><div class="desc">图标浮动(8px,2s) + 文字淡入</div></div>
+  </div>
+
+  <h3>层级 3：页面转场 Page</h3>
+  <div class="anim-grid">
+    <div class="anim-item"><div class="title">Push 进入</div><div class="desc">右滑+放大0.95→1.0 · 350ms</div></div>
+    <div class="anim-item"><div class="title">Bottom Sheet</div><div class="desc">磨砂淡入+弹簧弹出 · 400ms</div></div>
+    <div class="anim-item"><div class="title">Hero 共享</div><div class="desc">卡片图片→详情 · 300ms</div></div>
+    <div class="anim-item"><div class="title">Tab 切换</div><div class="desc">横向滑动+淡入 · 250ms</div></div>
+  </div>
+
+  <h3>层级 4：庆祝 Celebration</h3>
+  <div class="anim-grid">
+    <div class="anim-item" style="border-color:rgba(255,107,157,0.15);"><div class="title">🎉 加入成功</div><div class="desc">粒子爆发 + ✓弹出 + 光环 · 900ms</div></div>
+    <div class="anim-item" style="border-color:rgba(168,85,247,0.15);"><div class="title">⭐ 互评完成</div><div class="desc">星星逐亮 + 5星confetti · 1200ms</div></div>
+    <div class="anim-item" style="border-color:rgba(16,185,129,0.15);"><div class="title">📍 签到成功</div><div class="desc">GPS锁定 + 脉冲波纹 · 800ms</div></div>
+    <div class="anim-item" style="border-color:rgba(59,130,246,0.15);"><div class="title">🎴 AI回忆���</div><div class="desc">3D翻转 + 打字机 · 2000ms</div></div>
+  </div>
+
+  <!-- 5. 页面清单 -->
+  <h2 id="s5">5. 页面清单（21页 + 1壳）</h2>
+
+  <h3>核心流��</h3>
+  <div class="page-list">
+    <div class="page-item"><div class="page-num">1</div><div class="page-name">Splash</div><div class="page-desc">logo发光入场</div></div>
+    <div class="page-item"><div class="page-num">2</div><div class="page-name">登录</div><div class="page-desc">Glass输入框 + 背景光斑</div></div>
+    <div class="page-item"><div class="page-num">3</div><div class="page-name">验证码</div><div class="page-desc">Glass输入 + 倒计时</div></div>
+    <div class="page-item"><div class="page-num">4</div><div class="page-name">引导(5��)</div><div class="page-desc">过渡动画 + 进度条发光</div></div>
+    <div class="page-item"><div class="page-num">5</div><div class="page-name">首页</div><div class="page-desc">光斑 + glass PostCard + pill</div></div>
+    <div class="page-item"><div class="page-num">6</div><div class="page-name">滑卡</div><div class="page-desc">发光边框 + 庆祝动画</div></div>
+    <div class="page-item"><div class="page-num">7</div><div class="page-name">发现</div><div class="page-desc">Glass筛选 + 列表入��</div></div>
+    <div class="page-item"><div class="page-num">8</div><div class="page-name">搜索</div><div class="page-desc">Glass搜索框 + 结果入场</div></div>
+    <div class="page-item"><div class="page-num">9</div><div class="page-name">帖子详��</div><div class="page-desc">Hero + glass面板 + 头像墙</div></div>
+    <div class="page-item"><div class="page-num">10</div><div class="page-name">发布帖子</div><div class="page-desc">Glass表单 + 发布庆祝</div></div>
+  </div>
+
+  <h3>消息</h3>
+  <div class="page-list">
+    <div class="page-item"><div class="page-num">11</div><div class="page-name">消息列表</div><div class="page-desc">Glass消息项 + 发光红点</div></div>
+    <div class="page-item"><div class="page-num">12</div><div class="page-name">聊天</div><div class="page-desc">Glass/渐变气泡 + 发送动画</div></div>
+  </div>
+
+  <h3>活动</h3>
+  <div class="page-list">
+    <div class="page-item"><div class="page-num">13</div><div class="page-name">签到</div><div class="page-desc">GPS动画 + 脉冲庆祝</div></div>
+    <div class="page-item"><div class="page-num">14</div><div class="page-name">评价</div><div class="page-desc">Glass评价卡 + 星星动画</div></div>
+    <div class="page-item"><div class="page-num">15</div><div class="page-name">AI回忆卡</div><div class="page-desc">3D翻转 + 打字机</div></div>
+  </div>
+
+  <h3>个人中心</h3>
+  <div class="page-list">
+    <div class="page-item"><div class="page-num">16</div><div class="page-name">个人主页</div><div class="page-desc">Glass头部 + Tab + Hero头像</div></div>
+    <div class="page-item"><div class="page-num">17</div><div class="page-name">编辑资料</div><div class="page-desc">Glass表单 + 头像上传</div></div>
+    <div class="page-item"><div class="page-num">18</div><div class="page-name">隐私设置</div><div class="page-desc">Glass开关项</div></div>
+    <div class="page-item"><div class="page-num">19</div><div class="page-name">通知设置</div><div class="page-desc">Glass开���项</div></div>
+    <div class="page-item"><div class="page-num">20</div><div class="page-name">黑名���</div><div class="page-desc">Glass列表项</div></div>
+    <div class="page-item"><div class="page-num">21</div><div class="page-name">紧急联系人</div><div class="page-desc">Glass列表项</div></div>
+  </div>
+
+  <!-- 6. 实现架��� -->
+  <h2 id="s6">6. 实现���构</h2>
+  <div class="glass-card">
+    <div style="font-size:12px;color:rgba(255,255,255,0.6);line-height:1.8;">
+      <strong style="color:rgba(255,255,255,0.8);">新增文件（theme/）：</strong><code>app_colors.dart</code> 重写 · <code>app_theme.dart</code> 新增 · <code>glass_theme.dart</code> 新增<br/>
+      <strong style="color:rgba(255,255,255,0.8);">新增文件（widgets/）：</strong><code>glass_card</code> · <code>glass_button</code> · <code>glass_input</code> · <code>pill_tag</code> · <code>avatar_stack</code> · <code>shimmer_skeleton</code> · <code>animated_list_item</code> · <code>celebration_overlay</code><br/>
+      <strong style="color:rgba(255,255,255,0.8);">主题切换：</strong>ThemeMode.system + 手动 · GlassTheme InheritedWidget<br/>
+      <strong style="color:rgba(255,255,255,0.8);">GlassCard API：</strong><code>GlassCard(level: 1|2|3, useBlur: false, blurSigma: 20)</code>
+    </div>
+  </div>
+
+  <h3>伪玻璃 vs 真 blur</h3>
+  <div class="glass-card">
+    <table>
+      <tr><th>场景</th><th>方式</th></tr>
+      <tr><td>PostCard / 消息项 / 列表项</td><td style="color:#34D399;">伪玻璃</td></tr>
+      <tr><td>输入框 / 按钮 / Pill tag</td><td style="color:#34D399;">伪玻璃</td></tr>
+      <tr><td>AppBar</td><td style="color:#34D399;">伪玻璃</td></tr>
+      <tr><td>Bottom Sheet overlay</td><td style="color:#FF8AB4;">真 blur (sigma:20)</td></tr>
+      <tr><td>Modal / Dialog overlay</td><td style="color:#FF8AB4;">真 blur (sigma:16)</td></tr>
+      <tr><td>底部导航栏</td><td style="color:#FF8AB4;">��� blur (sigma:20)</td></tr>
+    </table>
+  </div>
+
+  <!-- 7. 排版 & 间距 -->
+  <h2 id="s7">7. 排版 & 间距</h2>
+  <div class="split">
+    <div class="glass-card">
+      <div style="color:rgba(255,255,255,0.4);font-size:10px;text-transform:uppercase;margin-bottom:10px;">排版</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:22px;font-weight:700;color:rgba(255,255,255,0.95);">headlineMedium 22px</div>
+        <div style="font-size:18px;font-weight:600;color:rgba(255,255,255,0.9);">titleLarge 18px</div>
+        <div style="font-size:15px;font-weight:600;color:rgba(255,255,255,0.85);">titleMedium 15px</div>
+        <div style="font-size:15px;color:rgba(255,255,255,0.7);">bodyLarge 15px</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.6);">bodyMedium 13px</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.5);">bodySmall 11px</div>
+        <div style="font-size:10px;font-weight:500;color:rgba(255,255,255,0.4);">labelSmall 10px</div>
+      </div>
+    </div>
+    <div class="glass-card">
+      <div style="color:rgba(255,255,255,0.4);font-size:10px;text-transform:uppercase;margin-bottom:10px;">间距 & 圆角</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.6);line-height:2;">
+        4 · 8 · 12 · 16 · 20 · 24 · 32 px<br/>
+        <span style="color:rgba(255,255,255,0.4);">卡片 20px · 按钮 16px · 输入框 14px</span><br/>
+        <span style="color:rgba(255,255,255,0.4);">Pill 12px · 头像 50% · Sheet 24px</span><br/>
+        <span style="color:rgba(255,255,255,0.4);">字体: 系统默认 (SF Pro / Roboto)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. 设计规则 -->
+  <h2 id="s8">8. 设计规则</h2>
+  <div class="glass-card">
+    <div class="rule-item"><div class="rule-num">1</div><div class="rule-text"><strong style="color:rgba(255,255,255,0.85);">颜色禁令</strong> — 禁止 <code>Color(0xFF...)</code> 硬编码，必须走 <code>DaziColors</code> / <code>GlassTheme</code></div></div>
+    <div class="rule-item"><div class="rule-num">2</div><div class="rule-text"><strong style="color:rgba(255,255,255,0.85);">间距禁令</strong> — 禁止非标值，必须用 <code>Spacing.spaceN</code></div></div>
+    <div class="rule-item"><div class="rule-num">3</div><div class="rule-text"><strong style="color:rgba(255,255,255,0.85);">玻璃一致性</strong> — 所有浮起容器必须用 <code>GlassCard(level:1/2/3)</code></div></div>
+    <div class="rule-item"><div class="rule-num">4</div><div class="rule-text"><strong style="color:rgba(255,255,255,0.85);">动画一致性</strong> — 列表入场用 <code>AnimatedListItem</code>，按钮动画用 <code>GlassButton</code> 内置</div></div>
+    <div class="rule-item"><div class="rule-num">5</div><div class="rule-text"><strong style="color:rgba(255,255,255,0.85);">暗色优先</strong> — 以暗色模式为基准开发，亮色模式作为派生</div></div>
+    <div class="rule-item"><div class="rule-num">6</div><div class="rule-text"><strong style="color:rgba(255,255,255,0.85);">可访问性</strong> — 对比度 ≥ 4.5:1，交互元素有 Semantics</div></div>
+    <div class="rule-item" style="border:none;"><div class="rule-num">7</div><div class="rule-text"><strong style="color:rgba(255,255,255,0.85);">性能红线</strong> — BackdropFilter 不超过 3 处同时渲染</div></div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,208 @@
+<h2>动画系统 — 重度反馈设计</h2>
+<p class="subtitle">每个操作都有视觉/触觉反馈，分为 4 个层级</p>
+
+<div class="section">
+  <h3>层级 1：微交互（Micro — 每个点击都有感觉）</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="padding:24px;background:#0F0A1A;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+        <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px;">
+          <div style="color:#FF8AB4;font-size:11px;font-weight:600;margin-bottom:8px;">按钮点击</div>
+          <div style="color:rgba(255,255,255,0.5);font-size:10px;line-height:1.6;">
+            按下 → 缩小 0.95 + 降低亮度<br/>
+            松开 → 弹回 1.0 + 涟漪扩散<br/>
+            <span style="color:rgba(255,255,255,0.3);">时长: 120ms · 曲线: easeOut</span>
+          </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px;">
+          <div style="color:#C084FC;font-size:11px;font-weight:600;margin-bottom:8px;">卡片点击</div>
+          <div style="color:rgba(255,255,255,0.5);font-size:10px;line-height:1.6;">
+            按下 → 缩小 0.97 + 边框加亮<br/>
+            松开 → 弹簧弹回<br/>
+            <span style="color:rgba(255,255,255,0.3);">时长: 200ms · 曲线: spring(damping:15)</span>
+          </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px;">
+          <div style="color:#60A5FA;font-size:11px;font-weight:600;margin-bottom:8px;">Tab 切换</div>
+          <div style="color:rgba(255,255,255,0.5);font-size:10px;line-height:1.6;">
+            光条滑动到新位置<br/>
+            图标颜色渐变 + 发光渐显<br/>
+            <span style="color:rgba(255,255,255,0.3);">时长: 250ms · 曲线: easeInOut</span>
+          </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px;">
+          <div style="color:#FBBF24;font-size:11px;font-weight:600;margin-bottom:8px;">触觉反馈</div>
+          <div style="color:rgba(255,255,255,0.5);font-size:10px;line-height:1.6;">
+            轻触按钮 → lightImpact<br/>
+            滑卡过阈值 → selectionClick<br/>
+            操作成功 → mediumImpact<br/>
+            <span style="color:rgba(255,255,255,0.3);">配合 HapticFeedback API</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:24px;">
+  <h3>层级 2：列表动画（List — 内容有生命感）</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="padding:24px;background:#0F0A1A;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+        <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px;">
+          <div style="color:#FF8AB4;font-size:11px;font-weight:600;margin-bottom:8px;">列表项入场</div>
+          <div style="color:rgba(255,255,255,0.5);font-size:10px;line-height:1.6;">
+            从下方 20px 淡入滑上<br/>
+            错位延迟：item[i] delay = i * 50ms<br/>
+            <span style="color:rgba(255,255,255,0.3);">时长: 350ms · 曲线: easeOutCubic</span>
+          </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px;">
+          <div style="color:#C084FC;font-size:11px;font-weight:600;margin-bottom:8px;">骨架屏闪烁</div>
+          <div style="color:rgba(255,255,255,0.5);font-size:10px;line-height:1.6;">
+            玻璃色块 + shimmer 光带从左扫到右<br/>
+            光带颜色：rgba(255,255,255,0.06)<br/>
+            <span style="color:rgba(255,255,255,0.3);">时长: 1500ms · 循环 · linear</span>
+          </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px;">
+          <div style="color:#60A5FA;font-size:11px;font-weight:600;margin-bottom:8px;">下拉刷新</div>
+          <div style="color:rgba(255,255,255,0.5);font-size:10px;line-height:1.6;">
+            自定义刷新指示器：品牌 logo 旋转<br/>
+            拉动时 logo 逐渐显现 + 放大<br/>
+            <span style="color:rgba(255,255,255,0.3);">阈值: 80px · 弹簧回弹</span>
+          </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px;">
+          <div style="color:#FBBF24;font-size:11px;font-weight:600;margin-bottom:8px;">空状态</div>
+          <div style="color:rgba(255,255,255,0.5);font-size:10px;line-height:1.6;">
+            图标缓慢上下浮动<br/>
+            文字淡入 + 按钮弹入<br/>
+            <span style="color:rgba(255,255,255,0.3);">浮动: 2s 周期 · 8px 幅度</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:24px;">
+  <h3>层级 3：页面转场（Page — 空间感）</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="padding:24px;background:#0F0A1A;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+        <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px;">
+          <div style="color:#FF8AB4;font-size:11px;font-weight:600;margin-bottom:8px;">push 进入</div>
+          <div style="color:rgba(255,255,255,0.5);font-size:10px;line-height:1.6;">
+            新页从右滑入 + 轻微放大（0.95→1.0）<br/>
+            旧页左滑 + 缩小（1.0→0.95）+ 降暗<br/>
+            <span style="color:rgba(255,255,255,0.3);">时长: 350ms · 曲线: easeInOutCubic</span>
+          </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px;">
+          <div style="color:#C084FC;font-size:11px;font-weight:600;margin-bottom:8px;">Bottom Sheet</div>
+          <div style="color:rgba(255,255,255,0.5);font-size:10px;line-height:1.6;">
+            磨砂玻璃背景淡入<br/>
+            Sheet 从底部弹簧弹出<br/>
+            背景 dim + blur 渐增<br/>
+            <span style="color:rgba(255,255,255,0.3);">时长: 400ms · 曲线: spring</span>
+          </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px;">
+          <div style="color:#60A5FA;font-size:11px;font-weight:600;margin-bottom:8px;">Hero 共享元素</div>
+          <div style="color:rgba(255,255,255,0.5);font-size:10px;line-height:1.6;">
+            PostCard 图片 → 详情页大图<br/>
+            头像 → Profile 页头像<br/>
+            Flutter Hero widget 自动处理<br/>
+            <span style="color:rgba(255,255,255,0.3);">时长: 300ms · 曲线: easeInOut</span>
+          </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px;">
+          <div style="color:#FBBF24;font-size:11px;font-weight:600;margin-bottom:8px;">Tab 页切换</div>
+          <div style="color:rgba(255,255,255,0.5);font-size:10px;line-height:1.6;">
+            横向滑动 + 淡入淡出<br/>
+            支持手势左右滑动切换 Tab<br/>
+            <span style="color:rgba(255,255,255,0.3);">时长: 250ms · 曲线: easeInOut</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:24px;">
+  <h3>层级 4：庆祝动画（Celebration — 高光时刻）</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="padding:24px;background:#0F0A1A;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+        <div style="background:rgba(255,107,157,0.08);border:1px solid rgba(255,107,157,0.15);border-radius:16px;padding:16px;">
+          <div style="color:#FF8AB4;font-size:11px;font-weight:600;margin-bottom:8px;">🎉 成功加入局</div>
+          <div style="color:rgba(255,255,255,0.5);font-size:10px;line-height:1.6;">
+            卡片飞出 + 粒子爆发效果<br/>
+            中心弹出 ✓ + "加入成功！"<br/>
+            渐变光环扩散<br/>
+            <span style="color:rgba(255,255,255,0.3);">时长: 900ms · HapticFeedback.mediumImpact</span>
+          </div>
+        </div>
+
+        <div style="background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.15);border-radius:16px;padding:16px;">
+          <div style="color:#C084FC;font-size:11px;font-weight:600;margin-bottom:8px;">⭐ 互评完成</div>
+          <div style="color:rgba(255,255,255,0.5);font-size:10px;line-height:1.6;">
+            星星逐个亮起 + 放大弹跳<br/>
+            最终评分数字弹入<br/>
+            彩色纸屑飘落（5星时）<br/>
+            <span style="color:rgba(255,255,255,0.3);">时长: 1200ms</span>
+          </div>
+        </div>
+
+        <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.15);border-radius:16px;padding:16px;">
+          <div style="color:#34D399;font-size:11px;font-weight:600;margin-bottom:8px;">📍 签到成功</div>
+          <div style="color:rgba(255,255,255,0.5);font-size:10px;line-height:1.6;">
+            GPS 定位动画 → 锁定<br/>
+            ✓ 图标弹出 + 脉冲波纹扩散<br/>
+            confetti 纸屑短爆<br/>
+            <span style="color:rgba(255,255,255,0.3);">时长: 800ms · HapticFeedback.heavyImpact</span>
+          </div>
+        </div>
+
+        <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.15);border-radius:16px;padding:16px;">
+          <div style="color:#60A5FA;font-size:11px;font-weight:600;margin-bottom:8px;">🎴 AI 回忆卡</div>
+          <div style="color:rgba(255,255,255,0.5);font-size:10px;line-height:1.6;">
+            卡片 3D 翻转展示<br/>
+            背景光斑色彩流动<br/>
+            文字逐行打字机效果<br/>
+            <span style="color:rgba(255,255,255,0.3);">时长: 2000ms</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:24px;padding:16px;background:rgba(168,85,247,0.06);border-radius:12px;border:1px solid rgba(168,85,247,0.12);">
+  <h3>⚡ 性能策略</h3>
+  <ul style="margin:8px 0;padding-left:20px;color:rgba(255,255,255,0.6);font-size:11px;line-height:1.8;">
+    <li><strong>伪玻璃优先</strong>：90% 的玻璃效果用 半透明底色 + 微弱边框 + 模糊阴影，不用 BackdropFilter</li>
+    <li><strong>真 blur 限制</strong>：只在 BottomSheet overlay、Modal 弹层、导航栏 3 处用真 BackdropFilter</li>
+    <li><strong>动画开关</strong>：检测 MediaQuery.disableAnimations + 低端机自动降级（去粒子、减 blur）</li>
+    <li><strong>列表动画只首屏</strong>：只有首次加载时有入场动画，滚动加载的新项直接显示</li>
+    <li><strong>Hero 动画白名单</strong>：只在 PostCard→详情、头像→Profile 两个路径启用</li>
+  </ul>
+</div>

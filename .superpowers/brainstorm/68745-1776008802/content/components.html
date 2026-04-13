@@ -1,0 +1,259 @@
+<h2>核心组件 — Glass Morph 设计</h2>
+<p class="subtitle">PostCard、底部导航、按钮、输入框的暗色模式设计</p>
+
+<!-- PostCard 新设计 -->
+<div class="section">
+  <h3>1. PostCard（信息流卡片）</h3>
+  <div class="split">
+    <!-- 当前 -->
+    <div class="mockup">
+      <div class="mockup-header">现在的 PostCard</div>
+      <div class="mockup-body" style="padding:16px;background:#FAFAFA;">
+        <div style="background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+          <div style="height:100px;background:linear-gradient(135deg,#FFE0E6,#E8D5FF);display:flex;align-items:center;justify-content:center;">
+            <span style="font-size:32px;">🍜</span>
+          </div>
+          <div style="padding:14px;">
+            <span style="background:#FF6B9D;color:#fff;font-size:9px;padding:2px 8px;border-radius:8px;">美食</span>
+            <div style="margin-top:8px;font-size:13px;font-weight:600;color:#1A1A1A;">周五晚上火锅局！</div>
+            <div style="margin-top:8px;font-size:10px;color:#666;">🕐 周五 19:00</div>
+            <div style="margin-top:2px;font-size:10px;color:#666;">📍 海底捞(南京路)</div>
+            <div style="margin-top:10px;height:6px;background:#F0F0F0;border-radius:3px;">
+              <div style="width:60%;height:100%;background:#FF6B9D;border-radius:3px;"></div>
+            </div>
+            <div style="font-size:9px;color:#999;margin-top:3px;">3/5 人</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 新设计 -->
+    <div class="mockup">
+      <div class="mockup-header">Glass Morph PostCard ✨</div>
+      <div class="mockup-body" style="padding:16px;background:#0F0A1A;">
+        <!-- 背景光斑 -->
+        <div style="position:relative;">
+          <div style="position:absolute;top:-10px;right:-10px;width:80px;height:80px;background:radial-gradient(circle,rgba(168,85,247,0.15),transparent 70%);border-radius:50%;pointer-events:none;"></div>
+
+          <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:20px;overflow:hidden;position:relative;">
+            <!-- 图片区 -->
+            <div style="height:100px;background:linear-gradient(135deg,rgba(255,107,157,0.2),rgba(168,85,247,0.2));display:flex;align-items:center;justify-content:center;position:relative;">
+              <span style="font-size:32px;">🍜</span>
+              <!-- 分类标签浮在图片上 -->
+              <span style="position:absolute;top:8px;left:8px;background:rgba(255,107,157,0.25);backdrop-filter:blur(8px);border:1px solid rgba(255,107,157,0.2);color:#FF8AB4;font-size:9px;padding:3px 10px;border-radius:10px;">🍜 美食</span>
+            </div>
+
+            <div style="padding:14px;">
+              <!-- 发布者信息 -->
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                <div style="width:28px;height:28px;border-radius:14px;background:linear-gradient(135deg,#FF6B9D,#A855F7);box-shadow:0 2px 8px rgba(255,107,157,0.3);"></div>
+                <div>
+                  <div style="color:rgba(255,255,255,0.9);font-size:11px;font-weight:600;">小明</div>
+                  <div style="color:rgba(255,255,255,0.35);font-size:8px;">2小时前</div>
+                </div>
+              </div>
+
+              <!-- 标题 -->
+              <div style="color:#fff;font-size:14px;font-weight:700;margin-bottom:8px;line-height:1.3;">周五晚上火锅局！</div>
+
+              <!-- 时间地点 -->
+              <div style="display:flex;gap:12px;margin-bottom:12px;">
+                <span style="color:rgba(255,255,255,0.5);font-size:10px;">🕐 周五 19:00</span>
+                <span style="color:rgba(255,255,255,0.5);font-size:10px;">📍 海底捞</span>
+              </div>
+
+              <!-- 头像墙 + 加入按钮 -->
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;">
+                  <div style="width:24px;height:24px;border-radius:12px;background:linear-gradient(135deg,#FF6B9D,#FF8A65);border:2px solid rgba(255,255,255,0.1);box-shadow:0 2px 4px rgba(0,0,0,0.2);"></div>
+                  <div style="width:24px;height:24px;border-radius:12px;background:linear-gradient(135deg,#A855F7,#6366F1);border:2px solid rgba(255,255,255,0.1);margin-left:-8px;box-shadow:0 2px 4px rgba(0,0,0,0.2);"></div>
+                  <div style="width:24px;height:24px;border-radius:12px;background:linear-gradient(135deg,#3B82F6,#06B6D4);border:2px solid rgba(255,255,255,0.1);margin-left:-8px;box-shadow:0 2px 4px rgba(0,0,0,0.2);"></div>
+                  <span style="color:rgba(255,255,255,0.4);font-size:9px;margin-left:6px;">3/5</span>
+                </div>
+                <div style="background:linear-gradient(135deg,#FF6B9D,#A855F7);color:#fff;font-size:10px;padding:6px 16px;border-radius:14px;font-weight:600;box-shadow:0 4px 12px rgba(255,107,157,0.3);cursor:pointer;">加入 →</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 底部导航 -->
+<div class="section" style="margin-top:32px;">
+  <h3>2. 底部导航栏</h3>
+  <div class="split">
+    <div class="mockup">
+      <div class="mockup-header">现在的导航</div>
+      <div class="mockup-body" style="padding:0;">
+        <div style="background:#FFFFFF;border-top:1px solid #E5E5E7;padding:8px 0;display:flex;justify-content:space-around;align-items:center;">
+          <div style="text-align:center;">
+            <div style="color:#FF6B9D;font-size:18px;">⟳</div>
+            <div style="color:#FF6B9D;font-size:9px;font-weight:600;">滑一滑</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="color:#999;font-size:18px;">◎</div>
+            <div style="color:#999;font-size:9px;">发现</div>
+          </div>
+          <div style="width:44px;height:44px;border-radius:22px;background:#FF6B9D;display:flex;align-items:center;justify-content:center;margin-top:-16px;">
+            <span style="color:#fff;font-size:20px;">+</span>
+          </div>
+          <div style="text-align:center;">
+            <div style="color:#999;font-size:18px;">💬</div>
+            <div style="color:#999;font-size:9px;">消息</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="color:#999;font-size:18px;">👤</div>
+            <div style="color:#999;font-size:9px;">我的</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mockup">
+      <div class="mockup-header">Glass Morph 导航 ✨</div>
+      <div class="mockup-body" style="padding:0;">
+        <div style="background:rgba(15,10,26,0.85);backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,0.06);padding:8px 0;display:flex;justify-content:space-around;align-items:center;position:relative;">
+          <!-- 选中态光晕 -->
+          <div style="position:absolute;top:-2px;left:10%;width:40px;height:3px;background:linear-gradient(90deg,transparent,#FF6B9D,transparent);border-radius:2px;"></div>
+
+          <div style="text-align:center;">
+            <div style="color:#FF6B9D;font-size:18px;filter:drop-shadow(0 0 6px rgba(255,107,157,0.4));">⟳</div>
+            <div style="color:#FF6B9D;font-size:9px;font-weight:600;">滑一滑</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="color:rgba(255,255,255,0.4);font-size:18px;">◎</div>
+            <div style="color:rgba(255,255,255,0.35);font-size:9px;">发现</div>
+          </div>
+          <!-- 中间发布按钮 -->
+          <div style="width:48px;height:48px;border-radius:24px;background:linear-gradient(135deg,#FF6B9D,#A855F7);display:flex;align-items:center;justify-content:center;margin-top:-20px;box-shadow:0 4px 20px rgba(255,107,157,0.4);border:2px solid rgba(255,255,255,0.1);">
+            <span style="color:#fff;font-size:22px;font-weight:300;">+</span>
+          </div>
+          <div style="text-align:center;position:relative;">
+            <div style="color:rgba(255,255,255,0.4);font-size:18px;">💬</div>
+            <div style="color:rgba(255,255,255,0.35);font-size:9px;">消息</div>
+            <!-- 未读红点 -->
+            <div style="position:absolute;top:-2px;right:8px;width:8px;height:8px;border-radius:4px;background:#FF6B9D;box-shadow:0 0 8px rgba(255,107,157,0.5);"></div>
+          </div>
+          <div style="text-align:center;">
+            <div style="color:rgba(255,255,255,0.4);font-size:18px;">👤</div>
+            <div style="color:rgba(255,255,255,0.35);font-size:9px;">我的</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 按钮系统 -->
+<div class="section" style="margin-top:32px;">
+  <h3>3. 按钮系统</h3>
+  <div class="mockup">
+    <div class="mockup-header">Glass Morph 按钮系列</div>
+    <div class="mockup-body" style="padding:24px;background:#0F0A1A;">
+      <div style="display:flex;flex-direction:column;gap:16px;">
+
+        <!-- Primary CTA -->
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div style="background:linear-gradient(135deg,#FF6B9D,#A855F7);color:#fff;font-size:13px;padding:12px 32px;border-radius:16px;font-weight:600;box-shadow:0 4px 20px rgba(255,107,157,0.35);text-align:center;min-width:140px;">加入这个局</div>
+          <span style="color:rgba(255,255,255,0.4);font-size:10px;">Primary — 渐变 + 发光阴影</span>
+        </div>
+
+        <!-- Secondary -->
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div style="background:rgba(255,107,157,0.12);border:1px solid rgba(255,107,157,0.25);color:#FF8AB4;font-size:13px;padding:12px 32px;border-radius:16px;font-weight:600;text-align:center;min-width:140px;">取消申请</div>
+          <span style="color:rgba(255,255,255,0.4);font-size:10px;">Secondary — 半透明 + 色彩边框</span>
+        </div>
+
+        <!-- Ghost -->
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);font-size:13px;padding:12px 32px;border-radius:16px;font-weight:500;text-align:center;min-width:140px;">查看详情</div>
+          <span style="color:rgba(255,255,255,0.4);font-size:10px;">Ghost — 玻璃质感 + 白色边框</span>
+        </div>
+
+        <!-- Danger -->
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);color:#F87171;font-size:13px;padding:12px 32px;border-radius:16px;font-weight:600;text-align:center;min-width:140px;">退出群聊</div>
+          <span style="color:rgba(255,255,255,0.4);font-size:10px;">Danger — 红色半透明</span>
+        </div>
+
+        <!-- Pill tags -->
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div style="display:flex;gap:6px;">
+            <span style="background:rgba(255,107,157,0.15);border:1px solid rgba(255,107,157,0.2);color:#FF8AB4;font-size:10px;padding:5px 12px;border-radius:12px;">🍜 美食</span>
+            <span style="background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.2);color:#C084FC;font-size:10px;padding:5px 12px;border-radius:12px;">🏀 运动</span>
+            <span style="background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.2);color:#60A5FA;font-size:10px;padding:5px 12px;border-radius:12px;">🎮 游戏</span>
+          </div>
+          <span style="color:rgba(255,255,255,0.4);font-size:10px;">Pill tags — 各类别自有色</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 输入框 -->
+<div class="section" style="margin-top:32px;">
+  <h3>4. 输入框 & 聊天气泡</h3>
+  <div class="split">
+    <div class="mockup">
+      <div class="mockup-header">输入框</div>
+      <div class="mockup-body" style="padding:24px;background:#0F0A1A;">
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <!-- Normal -->
+          <div>
+            <div style="color:rgba(255,255,255,0.5);font-size:10px;margin-bottom:6px;">手机号</div>
+            <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px 16px;color:rgba(255,255,255,0.3);font-size:12px;">请输入手机号</div>
+          </div>
+          <!-- Focused -->
+          <div>
+            <div style="color:#FF8AB4;font-size:10px;margin-bottom:6px;">活动标题</div>
+            <div style="background:rgba(255,107,157,0.06);border:1px solid rgba(255,107,157,0.3);border-radius:14px;padding:12px 16px;color:rgba(255,255,255,0.9);font-size:12px;box-shadow:0 0 12px rgba(255,107,157,0.1);">周五一起吃火锅</div>
+          </div>
+          <!-- Error -->
+          <div>
+            <div style="color:#F87171;font-size:10px;margin-bottom:6px;">验证码</div>
+            <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.3);border-radius:14px;padding:12px 16px;color:rgba(255,255,255,0.5);font-size:12px;">123456</div>
+            <div style="color:#F87171;font-size:9px;margin-top:4px;">验证码错误，请重新输入</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mockup">
+      <div class="mockup-header">聊天气泡</div>
+      <div class="mockup-body" style="padding:24px;background:#0F0A1A;">
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <!-- 别人的消息 -->
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <div style="width:28px;height:28px;border-radius:14px;background:linear-gradient(135deg,#3B82F6,#06B6D4);flex-shrink:0;"></div>
+            <div>
+              <div style="color:rgba(255,255,255,0.4);font-size:8px;margin-bottom:3px;">小红</div>
+              <div style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.08);border-radius:4px 16px 16px 16px;padding:10px 14px;color:rgba(255,255,255,0.85);font-size:11px;max-width:200px;">大家周五晚上 7 点在南京路海底捞见哦 🔥</div>
+            </div>
+          </div>
+          <!-- 自己的消息 -->
+          <div style="display:flex;justify-content:flex-end;">
+            <div style="background:linear-gradient(135deg,rgba(255,107,157,0.2),rgba(168,85,247,0.2));border:1px solid rgba(255,107,157,0.15);border-radius:16px 4px 16px 16px;padding:10px 14px;color:rgba(255,255,255,0.9);font-size:11px;max-width:200px;">好的！我准时到 ✌️</div>
+          </div>
+          <!-- 系统消息 -->
+          <div style="text-align:center;">
+            <span style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);color:rgba(255,255,255,0.35);font-size:9px;padding:4px 12px;border-radius:10px;">小明 加入了群聊</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:24px;padding:16px;background:rgba(255,107,157,0.05);border-radius:12px;border:1px solid rgba(255,107,157,0.1);">
+  <h3>设计要点总结</h3>
+  <ul style="margin:8px 0;padding-left:20px;color:rgba(255,255,255,0.7);font-size:12px;line-height:1.8;">
+    <li><strong>PostCard</strong>：新增发布者头像+昵称、参与者头像墙、分类标签浮在图片上</li>
+    <li><strong>导航栏</strong>：半透明磨砂底 + 选中态顶部光条 + 图标发光效果 + 发布按钮渐变光晕</li>
+    <li><strong>按钮</strong>：4 级体系（Primary/Secondary/Ghost/Danger）+ Pill tags</li>
+    <li><strong>输入框</strong>：3 态（Normal/Focused/Error），聚焦态有粉色发光边框</li>
+    <li><strong>聊天</strong>：他人消息用玻璃气泡，自己消息用粉紫渐变气泡</li>
+  </ul>
+</div>
