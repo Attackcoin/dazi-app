@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/glass_theme.dart';
+import '../../../core/theme/spacing.dart';
+import '../../../core/widgets/glass_card.dart';
+import '../../../core/widgets/glow_background.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/user_repository.dart';
 
@@ -56,6 +59,7 @@ class _NotificationsSettingsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final gt = GlassTheme.of(context);
     final user = ref.watch(currentAppUserProvider).valueOrNull;
     if (user != null && !_initialized) {
       for (final entry in user.notificationsPrefs.entries) {
@@ -64,42 +68,55 @@ class _NotificationsSettingsScreenState
       _initialized = true;
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('通知设置'),
-        actions: [
-          TextButton(
-            onPressed: _saving ? null : _save,
-            child: _saving
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('保存'),
-          ),
-        ],
-      ),
-      body: ListView.separated(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: _items.length,
-        separatorBuilder: (_, __) => const Divider(height: 1),
-        itemBuilder: (_, i) {
-          final (key, title, subtitle) = _items[i];
-          return SwitchListTile(
-            title: Text(title),
-            subtitle: Text(
-              subtitle,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-              ),
+    return GlowBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          title: const Text('通知设置'),
+          actions: [
+            TextButton(
+              onPressed: _saving ? null : _save,
+              child: _saving
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('保存'),
             ),
-            value: _prefs[key] ?? true,
-            activeColor: AppColors.primary,
-            onChanged: (v) => setState(() => _prefs[key] = v),
-          );
-        },
+          ],
+        ),
+        body: ListView.separated(
+          padding: const EdgeInsets.symmetric(
+            horizontal: Spacing.space16,
+            vertical: Spacing.space8,
+          ),
+          itemCount: _items.length,
+          separatorBuilder: (_, __) => const SizedBox(height: Spacing.space8),
+          itemBuilder: (_, i) {
+            final (key, title, subtitle) = _items[i];
+            return GlassCard(
+              level: 1,
+              child: SwitchListTile(
+                title: Text(
+                  title,
+                  style: TextStyle(color: gt.colors.textPrimary),
+                ),
+                subtitle: Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: gt.colors.textSecondary,
+                  ),
+                ),
+                value: _prefs[key] ?? true,
+                activeColor: gt.colors.primary,
+                onChanged: (v) => setState(() => _prefs[key] = v),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
