@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/dazi_colors.dart';
+import '../theme/glass_theme.dart';
 
 /// 庆祝动画工具。通过静态方法在 Overlay 上展示。
 class CelebrationOverlay {
@@ -150,6 +151,7 @@ class _CheckinSuccessAnimationState extends State<_CheckinSuccessAnimation> with
 
   @override
   Widget build(BuildContext context) {
+    final successColor = GlassTheme.of(context).colors.success;
     return AnimatedBuilder(
       animation: _ctrl,
       builder: (context, _) {
@@ -179,7 +181,7 @@ class _CheckinSuccessAnimationState extends State<_CheckinSuccessAnimation> with
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                              color: successColor.withValues(alpha: 0.3),
                               width: 2,
                             ),
                           ),
@@ -191,9 +193,9 @@ class _CheckinSuccessAnimationState extends State<_CheckinSuccessAnimation> with
                     child: Container(
                       width: 56,
                       height: 56,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Color(0xFF10B981),
+                        color: successColor,
                       ),
                       child: const Icon(Icons.check, color: Colors.white, size: 32),
                     ),

@@ -53,23 +53,27 @@ class GlassCard extends StatelessWidget {
     );
 
     if (useBlur) {
-      content = ClipRRect(
-        borderRadius: radius,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+      content = BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+        child: content,
+      );
+    }
+
+    if (onTap != null) {
+      content = Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: radius,
           child: content,
         ),
       );
     }
 
-    if (onTap != null) {
-      content = InkWell(
-        onTap: onTap,
-        borderRadius: radius,
-        child: content,
-      );
-    }
-
-    return content;
+    // Always clip to rounded corners so blur / ripple stay inside.
+    return ClipRRect(
+      borderRadius: radius,
+      child: content,
+    );
   }
 }

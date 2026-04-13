@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../theme/dazi_colors.dart';
 import '../theme/glass_theme.dart';
 
 /// 页面背景光斑容器。在 [child] 底层放置 1-3 个径向渐变光斑。
@@ -69,21 +70,21 @@ class GlowGlob {
   final double? right;
 
   static const topRight = GlowGlob(
-    color: Color(0x26FF6B9D),
+    color: DaziColors.glowPresetPink,
     size: 280,
     top: -60,
     right: -60,
   );
 
   static const bottomLeft = GlowGlob(
-    color: Color(0x1FA855F7),
+    color: DaziColors.glowPresetPurple,
     size: 220,
     bottom: 100,
     left: -40,
   );
 
   static const centerBlue = GlowGlob(
-    color: Color(0x143B82F6),
+    color: DaziColors.glowPresetBlue,
     size: 200,
     top: 300,
     right: 20,

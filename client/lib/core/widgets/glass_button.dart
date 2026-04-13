@@ -79,13 +79,17 @@ class _GlassButtonState extends State<GlassButton> with SingleTickerProviderStat
         border = Border.all(color: c.glassL1Border);
       case GlassButtonVariant.danger:
         bg = c.error.withValues(alpha: 0.12);
-        fg = const Color(0xFFF87171);
+        fg = c.error;
         border = Border.all(color: c.error.withValues(alpha: 0.25));
     }
 
     final isPrimary = widget.variant == GlassButtonVariant.primary;
 
-    return ScaleTransition(
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: widget.label,
+      child: ScaleTransition(
       scale: _scaleCtrl,
       child: GestureDetector(
         onTapDown: enabled ? _onTapDown : null,
@@ -141,6 +145,7 @@ class _GlassButtonState extends State<GlassButton> with SingleTickerProviderStat
             ),
           ),
         ),
+      ),
       ),
     );
   }

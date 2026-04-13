@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
+import '../theme/dazi_colors.dart';
 import '../theme/glass_theme.dart';
 
 /// 重叠头像墙，最多显示 [maxVisible] 个头像 + "+N" 溢出提示。
@@ -86,16 +87,10 @@ class _Avatar extends StatelessWidget {
   final Color borderColor;
   final int index;
 
-  static const _fallbackGradients = [
-    [Color(0xFFFF6B9D), Color(0xFFFF8A65)],
-    [Color(0xFFA855F7), Color(0xFF6366F1)],
-    [Color(0xFF3B82F6), Color(0xFF06B6D4)],
-    [Color(0xFF10B981), Color(0xFF34D399)],
-  ];
-
   @override
   Widget build(BuildContext context) {
-    final gradient = _fallbackGradients[index % _fallbackGradients.length];
+    final gradient = DaziColors
+        .avatarFallbackGradients[index % DaziColors.avatarFallbackGradients.length];
 
     return Container(
       width: size,

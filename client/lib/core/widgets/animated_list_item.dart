@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 /// 列表项入场动画包装器。
@@ -26,7 +28,7 @@ class _AnimatedListItemState extends State<AnimatedListItem> with SingleTickerPr
   late final AnimationController _ctrl;
   late final Animation<double> _opacity;
   late final Animation<Offset> _slide;
-  bool _hasAnimated = false;
+  Timer? _startTimer;
 
   @override
   void initState() {
@@ -40,16 +42,14 @@ class _AnimatedListItemState extends State<AnimatedListItem> with SingleTickerPr
     ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
 
     final cappedIndex = widget.index.clamp(0, 8);
-    Future.delayed(widget.delay * cappedIndex, () {
-      if (mounted && !_hasAnimated) {
-        _hasAnimated = true;
-        _ctrl.forward();
-      }
+    _startTimer = Timer(widget.delay * cappedIndex, () {
+      if (mounted) _ctrl.forward();
     });
   }
 
   @override
   void dispose() {
+    _startTimer?.cancel();
     _ctrl.dispose();
     super.dispose();
   }
