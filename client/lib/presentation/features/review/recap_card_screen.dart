@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/glass_theme.dart';
+import '../../../core/widgets/glass_button.dart';
+import '../../../core/widgets/glass_card.dart';
+import '../../../core/widgets/glow_background.dart';
 import '../../../data/models/match.dart';
 import '../../../data/repositories/match_repository.dart';
 import '../../../data/repositories/review_repository.dart';
@@ -38,40 +43,65 @@ class _RecapCardScreenState extends ConsumerState<RecapCardScreen> {
   @override
   Widget build(BuildContext context) {
     final matchAsync = ref.watch(matchByIdProvider(widget.matchId));
+    final gt = GlassTheme.of(context);
 
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
+    return GlowBackground(
+      globs: const [GlowGlob.topRight, GlowGlob.bottomLeft, GlowGlob.centerBlue],
+      child: Scaffold(
         backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.ios_share),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('分享功能待接入')),
-              );
-            },
-          ),
-        ],
-      ),
-      body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.heroGradient),
-        child: SafeArea(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          foregroundColor: gt.colors.textPrimary,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.ios_share),
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('分享功能待接入')),
+                );
+              },
+            ),
+          ],
+        ),
+        body: SafeArea(
           child: matchAsync.when(
-            loading: () => const Center(
-              child: CircularProgressIndicator(color: Colors.white),
+            loading: () => Center(
+              child: CircularProgressIndicator(color: gt.colors.primary),
             ),
             error: (e, _) => Center(
-              child: Text('加载失败：$e',
-                  style: const TextStyle(color: Colors.white)),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.error_outline,
+                        size: 48, color: gt.colors.textSecondary),
+                    const SizedBox(height: 12),
+                    Text('加载失败：$e',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: gt.colors.textPrimary)),
+                    const SizedBox(height: 20),
+                    OutlinedButton.icon(
+                      onPressed: () =>
+                          ref.invalidate(matchByIdProvider(widget.matchId)),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: gt.colors.textPrimary,
+                        side: BorderSide(color: gt.colors.glassL1Border),
+                      ),
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('重试'),
+                    ),
+                  ],
+                ),
+              ),
             ),
             data: (match) {
               if (match == null) {
-                return const Center(
+                return Center(
                   child: Text('搭子不存在',
-                      style: TextStyle(color: Colors.white)),
+                      style: TextStyle(color: gt.colors.textPrimary)),
                 );
               }
               final recap = match.recapCard;
@@ -90,6 +120,10 @@ class _RecapCardScreenState extends ConsumerState<RecapCardScreen> {
   }
 }
 
+// ============================================================
+// 回忆卡内容（含打字机标题效果）
+// ============================================================
+
 class _RecapContent extends StatelessWidget {
   const _RecapContent({required this.recap, required this.match});
 
@@ -98,33 +132,25 @@ class _RecapContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final gt = GlassTheme.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(24, 72, 24, 32),
       child: Column(
         children: [
-          const Text(
-            '✨ 搭子回忆卡',
+          _TypewriterTitle(
+            text: '✨ 搭子回忆卡',
             style: TextStyle(
-              color: Colors.white,
+              color: gt.colors.textPrimary,
               fontSize: 14,
               fontWeight: FontWeight.w500,
               letterSpacing: 2,
             ),
           ),
           const SizedBox(height: 20),
-          Container(
+          GlassCard(
+            level: 2,
+            borderRadius: BorderRadius.circular(28),
             padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.15),
-                  blurRadius: 30,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
             child: Column(
               children: [
                 const Text('🎉', style: TextStyle(fontSize: 48)),
@@ -132,21 +158,22 @@ class _RecapContent extends StatelessWidget {
                 Text(
                   '"${recap.summary}"',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: gt.colors.textPrimary,
                     height: 1.5,
                   ),
                 ),
                 const SizedBox(height: 24),
-                const Divider(),
+                Divider(color: gt.colors.glassL1Border),
                 const SizedBox(height: 20),
-                _recapRow(Icons.local_activity_outlined, '活动', recap.activity),
+                _recapRow(gt, Icons.local_activity_outlined, '活动', recap.activity),
                 const SizedBox(height: 12),
-                _recapRow(Icons.location_on_outlined, '地点', recap.location),
+                _recapRow(gt, Icons.location_on_outlined, '地点', recap.location),
                 const SizedBox(height: 12),
                 _recapRow(
+                  gt,
                   Icons.group_outlined,
                   '人数',
                   '${recap.participants} 人',
@@ -154,6 +181,7 @@ class _RecapContent extends StatelessWidget {
                 if (recap.duration != null) ...[
                   const SizedBox(height: 12),
                   _recapRow(
+                    gt,
                     Icons.schedule,
                     '时长',
                     '${recap.duration} 分钟',
@@ -163,9 +191,9 @@ class _RecapContent extends StatelessWidget {
                   const SizedBox(height: 16),
                   Text(
                     DateFormat('yyyy.MM.dd').format(recap.generatedAt!),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: AppColors.textTertiary,
+                      color: gt.colors.textTertiary,
                       letterSpacing: 1,
                     ),
                   ),
@@ -174,43 +202,40 @@ class _RecapContent extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 32),
-          ElevatedButton.icon(
+          GlassButton(
+            label: '回到广场',
+            icon: Icons.home,
+            variant: GlassButtonVariant.primary,
+            expand: true,
             onPressed: () => context.go('/'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: AppColors.primary,
-              minimumSize: const Size(double.infinity, 52),
-            ),
-            icon: const Icon(Icons.home),
-            label: const Text('回到广场'),
           ),
         ],
       ),
     );
   }
 
-  Widget _recapRow(IconData icon, String label, String value) {
+  Widget _recapRow(GlassThemeData gt, IconData icon, String label, String value) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: AppColors.textSecondary),
+        Icon(icon, size: 16, color: gt.colors.textSecondary),
         const SizedBox(width: 10),
         SizedBox(
           width: 44,
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: AppColors.textTertiary,
+              color: gt.colors.textTertiary,
             ),
           ),
         ),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
+              color: gt.colors.textPrimary,
             ),
           ),
         ),
@@ -218,6 +243,56 @@ class _RecapContent extends StatelessWidget {
     );
   }
 }
+
+// ============================================================
+// 打字机标题
+// ============================================================
+
+class _TypewriterTitle extends StatefulWidget {
+  const _TypewriterTitle({required this.text, required this.style});
+
+  final String text;
+  final TextStyle style;
+
+  @override
+  State<_TypewriterTitle> createState() => _TypewriterTitleState();
+}
+
+class _TypewriterTitleState extends State<_TypewriterTitle> {
+  String _displayed = '';
+  int _charIndex = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(milliseconds: 50), (_) {
+      if (_charIndex < widget.text.length) {
+        setState(() {
+          _charIndex++;
+          _displayed = widget.text.substring(0, _charIndex);
+        });
+      } else {
+        _timer?.cancel();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(_displayed, style: widget.style);
+  }
+}
+
+// ============================================================
+// 待生成态
+// ============================================================
 
 class _PendingRecap extends StatelessWidget {
   const _PendingRecap({required this.regenerating, required this.onRegenerate});
@@ -227,6 +302,7 @@ class _PendingRecap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final gt = GlassTheme.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -235,37 +311,26 @@ class _PendingRecap extends StatelessWidget {
           children: [
             const Text('✨', style: TextStyle(fontSize: 64)),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'AI 正在为你生成回忆卡',
               style: TextStyle(
-                color: Colors.white,
+                color: gt.colors.textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               '稍等片刻或手动触发',
-              style: TextStyle(color: Colors.white70, fontSize: 12),
+              style: TextStyle(color: gt.colors.textSecondary, fontSize: 12),
             ),
             const SizedBox(height: 32),
-            OutlinedButton.icon(
+            GlassButton(
+              label: '生成回忆卡',
+              icon: Icons.refresh,
+              variant: GlassButtonVariant.secondary,
+              isLoading: regenerating,
               onPressed: regenerating ? null : onRegenerate,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white,
-                side: const BorderSide(color: Colors.white),
-              ),
-              icon: regenerating
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : const Icon(Icons.refresh),
-              label: const Text('生成回忆卡'),
             ),
           ],
         ),
