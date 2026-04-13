@@ -9,6 +9,7 @@
 | 任务 | 文件夹 | 状态 |
 |------|--------|------|
 | T1: UI 修复 (HIGH + MEDIUM) | `task-ui-fixes/` | 完成，flutter analyze 零错误 |
+| Fix HIGH SD-5 + split profile_screen | `task-fix-high-sd5-and-split-profile/` | 完成，CI 46/46 PASS (2026-04-13) |
 
 ---
 
