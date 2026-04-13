@@ -5,6 +5,9 @@
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
+  "storage": {
+    "rules": "storage.rules"
+  },
   "functions": [
     {
       "codebase": "default",
@@ -19,7 +22,7 @@
     }
   ],
   "hosting": {
-    "public": "public",
+    "public": "client/build/web",
     "ignore": [
       "firebase.json",
       "**/.*",
@@ -27,7 +30,8 @@
     ],
     "rewrites": [
       { "source": "/p/**", "destination": "/post.html" },
-      { "source": "/post/**", "destination": "/post.html" }
+      { "source": "/post/**", "destination": "/post.html" },
+      { "source": "**", "destination": "/index.html" }
     ],
     "headers": [
       {

@@ -5,8 +5,9 @@ import '../../data/repositories/auth_repository.dart';
 import '../../presentation/features/auth/login_screen.dart';
 import '../../presentation/features/auth/phone_verify_screen.dart';
 import '../../presentation/features/checkin/checkin_screen.dart';
+import '../../presentation/features/discover/discover_screen.dart';
 import '../../presentation/features/home/home_shell.dart';
-import '../../presentation/features/home/home_screen.dart';
+import '../../presentation/features/swipe/swipe_screen.dart';
 import '../../presentation/features/messages/chat_screen.dart';
 import '../../presentation/features/messages/messages_screen.dart';
 import '../../presentation/features/onboarding/onboarding_screen.dart';
@@ -20,6 +21,7 @@ import '../../presentation/features/profile/privacy_settings_screen.dart';
 import '../../presentation/features/profile/profile_screen.dart';
 import '../../presentation/features/review/recap_card_screen.dart';
 import '../../presentation/features/review/review_screen.dart';
+import '../../presentation/features/search/search_screen.dart';
 import '../../presentation/features/splash/splash_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -80,7 +82,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: '/',
-            builder: (_, __) => const HomeScreen(),
+            builder: (_, __) => const SwipeScreen(),
+          ),
+          GoRoute(
+            path: '/discover',
+            builder: (_, __) => const DiscoverScreen(),
           ),
           GoRoute(
             path: '/messages',
@@ -131,6 +137,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/settings/blocked',
         builder: (_, __) => const BlockedUsersScreen(),
+      ),
+      GoRoute(
+        path: '/search',
+        builder: (_, __) => const SearchScreen(),
+      ),
+      GoRoute(
+        path: '/user/:uid',
+        builder: (_, state) =>
+            ProfileScreen(uid: state.pathParameters['uid']!),
       ),
       GoRoute(
         path: '/post/create',

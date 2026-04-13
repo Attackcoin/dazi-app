@@ -52,7 +52,17 @@
 
 ## Next Tasks
 
-### ✅ Completed This Session
+### ✅ Completed (2026-04-12) — 发布准备
+- Web 版部署到 Firebase Hosting → https://dazi-dev.web.app ✅
+- App 名称改为"搭子"（Android + iOS + Web）✅
+- App 图标生成（粉色 #FF6B9D + 白色"搭"字，全平台）✅
+- Android release keystore 生成 + AAB 构建（正式签名，39.7MB）✅
+- FCM 推送通知客户端配置（push_notification_service.dart + app.dart 集成）✅
+- 功能性缺口检查：搜索/聊天/申请/签到/语音发帖 全部代码完整 ✅
+- Android Gradle 升级：AGP 8.7.3 / Kotlin 2.1.0 / Gradle 8.11.1 / Java 17 ✅
+- `C:\dazi-app` junction 创建（绕过中文路径 Flutter 构建问题）✅
+
+### ✅ Completed (Earlier Sessions)
 - Firebase CLI installed (v15.9.0)
 - `firebase login` completed
 - `firebase init` run: Firestore + Functions + Emulators configured
