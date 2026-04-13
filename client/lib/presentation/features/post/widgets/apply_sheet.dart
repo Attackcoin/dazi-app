@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/glass_theme.dart';
 import '../../../../data/models/post.dart';
 import '../../../../data/repositories/application_repository.dart';
 
@@ -46,6 +46,7 @@ class _ApplySheetState extends ConsumerState<ApplySheet> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = GlassTheme.of(context).colors;
     final post = widget.post;
     final isFull = post.isFull;
     return SafeArea(
@@ -65,7 +66,7 @@ class _ApplySheetState extends ConsumerState<ApplySheet> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.border,
+                    color: colors.glassL1Border,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -83,16 +84,16 @@ class _ApplySheetState extends ConsumerState<ApplySheet> {
                 isFull
                     ? '当前活动已满员，加入候补后若有空位会自动递补'
                     : '发布者会在 24 小时内回复你的申请',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
-                  color: AppColors.textSecondary,
+                  color: colors.textSecondary,
                 ),
               ),
               const SizedBox(height: 20),
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceAlt,
+                  color: colors.glassL2Bg,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -107,6 +108,7 @@ class _ApplySheetState extends ConsumerState<ApplySheet> {
                     ),
                     const SizedBox(height: 8),
                     _sheetInfo(
+                      context,
                       Icons.schedule,
                       post.time == null
                           ? '时间待定'
@@ -114,11 +116,13 @@ class _ApplySheetState extends ConsumerState<ApplySheet> {
                     ),
                     const SizedBox(height: 4),
                     _sheetInfo(
+                      context,
                       Icons.location_on_outlined,
                       post.location?.name ?? '地点待定',
                     ),
                     const SizedBox(height: 4),
                     _sheetInfo(
+                      context,
                       Icons.group_outlined,
                       '${post.acceptedCount}/${post.totalSlots} 人',
                     ),
@@ -149,17 +153,18 @@ class _ApplySheetState extends ConsumerState<ApplySheet> {
     );
   }
 
-  Widget _sheetInfo(IconData icon, String text) {
+  Widget _sheetInfo(BuildContext context, IconData icon, String text) {
+    final colors = GlassTheme.of(context).colors;
     return Row(
       children: [
-        Icon(icon, size: 14, color: AppColors.textSecondary),
+        Icon(icon, size: 14, color: colors.textSecondary),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: AppColors.textSecondary,
+              color: colors.textSecondary,
             ),
           ),
         ),
@@ -172,7 +177,7 @@ class _ApplySheetState extends ConsumerState<ApplySheet> {
 Future<ApplyResult?> showApplySheet(BuildContext context, Post post) {
   return showModalBottomSheet<ApplyResult?>(
     context: context,
-    backgroundColor: AppColors.surface,
+    backgroundColor: GlassTheme.of(context).colors.surface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),

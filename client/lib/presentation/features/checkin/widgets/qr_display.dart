@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/glass_theme.dart';
 
 /// 本人的签到二维码 —— 编码为 `dazi://checkin/{matchId}?uid={uid}`。
 class QrDisplay extends StatelessWidget {
@@ -18,6 +18,7 @@ class QrDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = GlassTheme.of(context).colors;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -28,7 +29,7 @@ class QrDisplay extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.15),
+                color: colors.primary.withValues(alpha: 0.15),
                 blurRadius: 24,
                 spreadRadius: 4,
               ),
@@ -39,22 +40,22 @@ class QrDisplay extends StatelessWidget {
             version: QrVersions.auto,
             size: 220,
             gapless: false,
-            eyeStyle: const QrEyeStyle(
+            eyeStyle: QrEyeStyle(
               eyeShape: QrEyeShape.square,
-              color: AppColors.primary,
+              color: colors.primary,
             ),
-            dataModuleStyle: const QrDataModuleStyle(
+            dataModuleStyle: QrDataModuleStyle(
               dataModuleShape: QrDataModuleShape.square,
-              color: AppColors.textPrimary,
+              color: colors.textPrimary,
             ),
           ),
         ),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           '让对方扫一扫完成签到',
           style: TextStyle(
             fontSize: 13,
-            color: AppColors.textSecondary,
+            color: colors.textSecondary,
           ),
         ),
       ],

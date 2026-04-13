@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/glass_theme.dart';
 import '../../../../data/models/chat_message.dart';
 
 /// 聊天气泡 —— 区分发送方/接收方，支持文字消息。
@@ -23,8 +23,9 @@ class MessageBubble extends StatelessWidget {
       return _SystemNotice(text: message.text);
     }
 
-    final bubbleColor = isMe ? AppColors.primary : AppColors.surfaceAlt;
-    final textColor = isMe ? Colors.white : AppColors.textPrimary;
+    final colors = GlassTheme.of(context).colors;
+    final bubbleColor = isMe ? colors.primary : colors.glassL1Bg;
+    final textColor = isMe ? Colors.white : colors.textPrimary;
 
     return Column(
       crossAxisAlignment:
@@ -36,9 +37,9 @@ class MessageBubble extends StatelessWidget {
             child: Center(
               child: Text(
                 DateFormat('M月d日 HH:mm').format(message.sentAt),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
-                  color: AppColors.textTertiary,
+                  color: colors.textTertiary,
                 ),
               ),
             ),
@@ -79,20 +80,21 @@ class _SystemNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = GlassTheme.of(context).colors;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
       child: Center(
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: AppColors.surfaceAlt,
+            color: colors.glassL1Bg,
             borderRadius: BorderRadius.circular(999),
           ),
           child: Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
-              color: AppColors.textSecondary,
+              color: colors.textSecondary,
             ),
           ),
         ),

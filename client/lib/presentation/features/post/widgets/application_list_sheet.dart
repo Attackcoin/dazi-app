@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/glass_theme.dart';
 import '../../../../data/models/app_user.dart';
 import '../../../../data/models/application.dart';
 import '../../../../data/repositories/application_repository.dart';
@@ -18,6 +18,7 @@ class ApplicationListSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final appsAsync = ref.watch(applicationsForPostProvider(postId));
+    final colors = GlassTheme.of(context).colors;
 
     return SafeArea(
       top: false,
@@ -35,7 +36,7 @@ class ApplicationListSheet extends ConsumerWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.border,
+                  color: colors.glassL1Border,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -56,13 +57,13 @@ class ApplicationListSheet extends ConsumerWidget {
                 error: (e, _) => Center(child: Text('加载失败：$e')),
                 data: (apps) {
                   if (apps.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.all(40),
+                    return Padding(
+                      padding: const EdgeInsets.all(40),
                       child: Center(
                         child: Text(
                           '还没有人申请哦～',
                           style: TextStyle(
-                            color: AppColors.textTertiary,
+                            color: colors.textTertiary,
                             fontSize: 13,
                           ),
                         ),
@@ -141,6 +142,7 @@ class _ApplicationTileState extends ConsumerState<_ApplicationTile> {
   @override
   Widget build(BuildContext context) {
     final firestore = ref.watch(firestoreProvider);
+    final colors = GlassTheme.of(context).colors;
     return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       future: firestore.collection('users').doc(widget.app.applicantId).get(),
       builder: (context, snap) {
@@ -149,19 +151,19 @@ class _ApplicationTileState extends ConsumerState<_ApplicationTile> {
         return Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.surfaceAlt,
+            color: colors.glassL2Bg,
             borderRadius: BorderRadius.circular(14),
           ),
           child: Row(
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundColor: AppColors.surface,
+                backgroundColor: colors.surface,
                 backgroundImage: (user?.avatar.isNotEmpty ?? false)
                     ? CachedNetworkImageProvider(user!.avatar)
                     : null,
                 child: (user?.avatar.isEmpty ?? true)
-                    ? const Icon(Icons.person, color: AppColors.textTertiary)
+                    ? Icon(Icons.person, color: colors.textTertiary)
                     : null,
               ),
               const SizedBox(width: 12),
@@ -187,9 +189,9 @@ class _ApplicationTileState extends ConsumerState<_ApplicationTile> {
                       user == null
                           ? ''
                           : '${user.age ?? '—'}岁 · ⭐ ${user.rating.toStringAsFixed(1)}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: AppColors.textSecondary,
+                        color: colors.textSecondary,
                       ),
                     ),
                   ],
@@ -198,13 +200,13 @@ class _ApplicationTileState extends ConsumerState<_ApplicationTile> {
               if (widget.app.status == ApplicationStatus.pending) ...[
                 IconButton(
                   icon: const Icon(Icons.close),
-                  color: AppColors.textSecondary,
+                  color: colors.textSecondary,
                   onPressed: _busy ? null : _reject,
                   tooltip: '拒绝',
                 ),
                 IconButton(
                   icon: const Icon(Icons.check_circle),
-                  color: AppColors.primary,
+                  color: colors.primary,
                   onPressed: _busy ? null : _accept,
                   tooltip: '接受',
                 ),
@@ -224,10 +226,11 @@ class _StatusTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = switch (status) {
+    final colors = GlassTheme.of(context).colors;
+    final tagColors = switch (status) {
       ApplicationStatus.accepted => (
-          AppColors.primary.withValues(alpha: 0.1),
-          AppColors.primary,
+          colors.primary.withValues(alpha: 0.1),
+          colors.primary,
         ),
       ApplicationStatus.pending => (
           Colors.amber.withValues(alpha: 0.15),
@@ -238,21 +241,21 @@ class _StatusTag extends StatelessWidget {
           Colors.blue.shade700,
         ),
       _ => (
-          AppColors.surface,
-          AppColors.textTertiary,
+          colors.surface,
+          colors.textTertiary,
         ),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
       decoration: BoxDecoration(
-        color: colors.$1,
+        color: tagColors.$1,
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
         status.label,
         style: TextStyle(
           fontSize: 10,
-          color: colors.$2,
+          color: tagColors.$2,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -263,7 +266,7 @@ class _StatusTag extends StatelessWidget {
 Future<void> showApplicationListSheet(BuildContext context, String postId) {
   return showModalBottomSheet(
     context: context,
-    backgroundColor: AppColors.surface,
+    backgroundColor: GlassTheme.of(context).colors.surface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),

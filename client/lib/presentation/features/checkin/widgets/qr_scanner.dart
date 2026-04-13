@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/glass_theme.dart';
 
 /// 二维码扫描器 —— 识别到合法 `dazi://checkin/...` payload 后回调。
 class QrScanner extends StatefulWidget {
@@ -70,7 +70,7 @@ class _QrScannerState extends State<QrScanner> {
       clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primary, width: 2),
+        border: Border.all(color: GlassTheme.of(context).colors.primary, width: 2),
       ),
       child: Stack(
         children: [
