@@ -23,19 +23,25 @@ function getClaudeClient() {
   return new Anthropic({ apiKey });
 }
 
+// AI 接口输入长度限制（防止恶意超长输入消耗 API 配额）
+const MAX_INPUT_LENGTH = 2000;
+
 // ─────────────────────────────────────────────────────
 // 语音发布解析
 // 输入：用户说的一句话（已经过设备 STT 转成文字）
 // 输出：结构化的搭子表单字段
 // ─────────────────────────────────────────────────────
 exports.parseVoicePost = functions
-  .region('asia-east1')
+  .region('asia-southeast1')
   .https.onCall(async (data, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', '请先登录');
 
     const { text } = data;
     if (!text || text.trim().length === 0) {
       throw new functions.https.HttpsError('invalid-argument', '语音文字不能为空');
+    }
+    if (text.length > MAX_INPUT_LENGTH) {
+      throw new functions.https.HttpsError('invalid-argument', `输入文字过长，最多 ${MAX_INPUT_LENGTH} 字符`);
     }
 
     const claude = getClaudeClient();
@@ -77,12 +83,18 @@ exports.parseVoicePost = functions
 // 输出：活动描述文案（2-3句话）
 // ─────────────────────────────────────────────────────
 exports.generateDescription = functions
-  .region('asia-east1')
+  .region('asia-southeast1')
   .https.onCall(async (data, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', '请先登录');
 
     const { title, category } = data;
     if (!title) throw new functions.https.HttpsError('invalid-argument', '标题不能为空');
+    if (title.length > MAX_INPUT_LENGTH) {
+      throw new functions.https.HttpsError('invalid-argument', `标题过长，最多 ${MAX_INPUT_LENGTH} 字符`);
+    }
+    if (category && category.length > MAX_INPUT_LENGTH) {
+      throw new functions.https.HttpsError('invalid-argument', `分类过长，最多 ${MAX_INPUT_LENGTH} 字符`);
+    }
 
     const claude = getClaudeClient();
 
@@ -109,7 +121,7 @@ exports.generateDescription = functions
 // 输出：3条个性化破冰话题
 // ─────────────────────────────────────────────────────
 exports.generateIcebreakers = functions
-  .region('asia-east1')
+  .region('asia-southeast1')
   .https.onCall(async (data, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', '请先登录');
 
@@ -134,8 +146,9 @@ exports.generateIcebreakers = functions
     const me = myDoc.data();
     const others = otherDocs.map(d => d.data()).filter(Boolean);
 
-    const otherTags = others.flatMap(u => u.tags || []).join('、');
-    const myTags = (me.tags || []).join('、');
+    // 截断 tags 拼接字符串，防止超长用户标签滥用 API 配额
+    const otherTags = others.flatMap(u => u.tags || []).join('、').slice(0, MAX_INPUT_LENGTH);
+    const myTags = (me.tags || []).join('、').slice(0, MAX_INPUT_LENGTH);
 
     const claude = getClaudeClient();
     const message = await claude.messages.create({
@@ -172,7 +185,7 @@ exports.generateIcebreakers = functions
 // 输出：回忆卡文案（存回 Firestore）
 // ─────────────────────────────────────────────────────
 exports.generateRecapCard = functions
-  .region('asia-east1')
+  .region('asia-southeast1')
   .https.onCall(async (data, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', '请先登录');
 
@@ -232,7 +245,7 @@ exports._generateRecapCard = _generateRecapCard;
 // 为过去30天内有活动的用户生成月报
 // ─────────────────────────────────────────────────────
 exports.generateMonthlyReports = functions
-  .region('asia-east1')
+  .region('asia-southeast1')
   .pubsub.schedule('5 0 1 * *')
   .timeZone('Asia/Shanghai')
   .onRun(async () => {

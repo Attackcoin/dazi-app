@@ -12,7 +12,7 @@ const db = admin.firestore();
 // 提交申请（含男女比例校验）
 // ─────────────────────────────────────────────────────
 exports.applyToPost = functions
-  .region('asia-east1')
+  .region('asia-southeast1')
   .https.onCall(async (data, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', '请先登录');
 
@@ -95,7 +95,7 @@ exports.applyToPost = functions
 // 发布者接受申请
 // ─────────────────────────────────────────────────────
 exports.acceptApplication = functions
-  .region('asia-east1')
+  .region('asia-southeast1')
   .https.onCall(async (data, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', '请先登录');
 
@@ -179,32 +179,68 @@ exports.acceptApplication = functions
 // 发布者拒绝申请
 // ─────────────────────────────────────────────────────
 exports.rejectApplication = functions
-  .region('asia-east1')
+  .region('asia-southeast1')
   .https.onCall(async (data, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', '请先登录');
 
     const { applicationId, reason } = data;
-    const appRef = db.collection('applications').doc(applicationId);
-    const appDoc = await appRef.get();
 
-    if (!appDoc.exists) throw new functions.https.HttpsError('not-found', '申请不存在');
+    return await db.runTransaction(async (tx) => {
+      const appRef = db.collection('applications').doc(applicationId);
+      const appDoc = await tx.get(appRef);
 
-    const app = appDoc.data();
-    const postDoc = await db.collection('posts').doc(app.postId).get();
+      if (!appDoc.exists) throw new functions.https.HttpsError('not-found', '申请不存在');
 
-    if (postDoc.data().userId !== context.auth.uid) {
-      throw new functions.https.HttpsError('permission-denied', '只有发布者可以拒绝申请');
-    }
+      const app = appDoc.data();
+      if (app.status !== 'pending') throw new functions.https.HttpsError('failed-precondition', '该申请已被处理');
 
-    await appRef.update({ status: 'rejected', rejectReason: reason || null });
-    return { success: true };
+      const postRef = db.collection('posts').doc(app.postId);
+      const postDoc = await tx.get(postRef);
+
+      if (postDoc.data().userId !== context.auth.uid) {
+        throw new functions.https.HttpsError('permission-denied', '只有发布者可以拒绝申请');
+      }
+
+      tx.update(appRef, { status: 'rejected', rejectReason: reason || null });
+      return { success: true };
+    });
+  });
+
+// ─────────────────────────────────────────────────────
+// 申请者撤回自己的申请
+// ─────────────────────────────────────────────────────
+exports.withdrawApplication = functions
+  .region('asia-southeast1')
+  .https.onCall(async (data, context) => {
+    if (!context.auth) throw new functions.https.HttpsError('unauthenticated', '请先登录');
+
+    const { applicationId } = data;
+    if (!applicationId) throw new functions.https.HttpsError('invalid-argument', '缺少 applicationId');
+
+    return await db.runTransaction(async (tx) => {
+      const appRef = db.collection('applications').doc(applicationId);
+      const appDoc = await tx.get(appRef);
+
+      if (!appDoc.exists) throw new functions.https.HttpsError('not-found', '申请不存在');
+
+      const app = appDoc.data();
+      if (app.applicantId !== context.auth.uid) {
+        throw new functions.https.HttpsError('permission-denied', '只能撤回自己的申请');
+      }
+      if (app.status !== 'pending') {
+        throw new functions.https.HttpsError('failed-precondition', '该申请已被处理，无法撤回');
+      }
+
+      tx.update(appRef, { status: 'withdrawn' });
+      return { success: true };
+    });
   });
 
 // ─────────────────────────────────────────────────────
 // 每小时检查：24h 未回应的申请自动过期
 // ─────────────────────────────────────────────────────
 exports.expireApplications = functions
-  .region('asia-east1')
+  .region('asia-southeast1')
   .pubsub.schedule('every 60 minutes')
   .onRun(async () => {
     const now = admin.firestore.Timestamp.now();
@@ -227,7 +263,7 @@ exports.expireApplications = functions
 // 提交评价（签到完成后可用）
 // ─────────────────────────────────────────────────────
 exports.submitReview = functions
-  .region('asia-east1')
+  .region('asia-southeast1')
   .https.onCall(async (data, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', '请先登录');
 
@@ -247,18 +283,15 @@ exports.submitReview = functions
       throw new functions.https.HttpsError('failed-precondition', '搭子尚未完成');
     }
 
-    // 防止重复评价
-    const existingReview = await db.collection('reviews')
-      .where('matchId', '==', matchId)
-      .where('fromUser', '==', fromUid)
-      .where('toUser', '==', toUserId)
-      .limit(1)
-      .get();
+    // 防止重复评价：使用复合文档 ID（与 Firestore rules 层保持一致）
+    const reviewDocId = `${matchId}_${fromUid}_${toUserId}`;
+    const reviewRef = db.collection('reviews').doc(reviewDocId);
+    const existingReview = await reviewRef.get();
 
-    if (!existingReview.empty) throw new functions.https.HttpsError('already-exists', '你已经评价过了');
+    if (existingReview.exists) throw new functions.https.HttpsError('already-exists', '你已经评价过了');
 
-    // 写入评价
-    await db.collection('reviews').add({
+    // 写入评价（使用复合 ID，天然防止重复写入）
+    await reviewRef.set({
       matchId,
       fromUser: fromUid,
       toUser: toUserId,
@@ -268,17 +301,11 @@ exports.submitReview = functions
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    // 重新计算被评价者的平均分
-    const allReviews = await db.collection('reviews')
-      .where('toUser', '==', toUserId)
-      .get();
-
-    const total = allReviews.docs.reduce((sum, d) => sum + d.data().rating, 0);
-    const avg = total / allReviews.size;
-
+    // 原子增量更新被评价者的 ratingSum + ratingCount，避免全量查询和 race condition
+    // 前端展示 rating = ratingSum / ratingCount（均值），reviewCount 即 ratingCount
     await db.collection('users').doc(toUserId).update({
-      rating: Math.round(avg * 10) / 10,
-      reviewCount: allReviews.size,
+      ratingSum: admin.firestore.FieldValue.increment(rating),
+      ratingCount: admin.firestore.FieldValue.increment(1),
     });
 
     return { success: true };

@@ -7,7 +7,7 @@ final reviewRepositoryProvider = Provider<ReviewRepository>((ref) {
   return ReviewRepository(functions: ref.watch(firebaseFunctionsProvider));
 });
 
-/// 评价仓库 —— 调用 `submitReview` + `generateRecapCard`（asia-east1）。
+/// 评价仓库 —— 调用 `submitReview` + `generateRecapCard`（asia-southeast1）。
 class ReviewRepository {
   ReviewRepository({required FirebaseFunctions functions})
       : _functions = functions;

@@ -12,6 +12,7 @@ final postCreateRepositoryProvider = Provider<PostCreateRepository>((ref) {
   return PostCreateRepository(
     firestore: ref.watch(firestoreProvider),
     auth: ref.watch(firebaseAuthProvider),
+    storage: ref.watch(firebaseStorageProvider),
   );
 });
 
@@ -71,22 +72,57 @@ class PostCreateRepository {
   PostCreateRepository({
     required FirebaseFirestore firestore,
     required FirebaseAuth auth,
+    required FirebaseStorage storage,
   })  : _firestore = firestore,
-        _auth = auth;
+        _auth = auth,
+        _storage = storage;
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
+  final FirebaseStorage _storage;
 
   /// 上传图片到 Firebase Storage，返回下载 URL。
   Future<String> uploadImage(File file) async {
     final user = _auth.currentUser;
     if (user == null) throw StateError('未登录');
 
-    final ref = FirebaseStorage.instance.ref(
+    final ref = _storage.ref(
       'posts/${user.uid}/${DateTime.now().millisecondsSinceEpoch}_${file.uri.pathSegments.last}',
     );
     await ref.putFile(file);
     return ref.getDownloadURL();
+  }
+
+  /// 更新帖子（仅发布者可用，status=open 时）。
+  Future<void> updatePost(String postId, PostDraft draft) async {
+    final user = _auth.currentUser;
+    if (user == null) throw StateError('未登录');
+    await _firestore.collection('posts').doc(postId).update({
+      'category': draft.category,
+      'title': draft.title.trim(),
+      'description': draft.description.trim(),
+      'images': draft.imageUrls,
+      'time': draft.time != null ? Timestamp.fromDate(draft.time!) : null,
+      'location': {
+        'name': draft.locationName.trim(),
+        'city': draft.city,
+      },
+      'totalSlots': draft.totalSlots,
+      'costType': draft.costType.value,
+      'isSocialAnxietyFriendly': draft.isSocialAnxietyFriendly,
+    });
+  }
+
+  /// 取消帖子（status → cancelled）。
+  Future<void> cancelPost(String postId) async {
+    await _firestore.collection('posts').doc(postId).update({
+      'status': 'cancelled',
+    });
+  }
+
+  /// 删除帖子（仅 status=open 且无申请时）。
+  Future<void> deletePost(String postId) async {
+    await _firestore.collection('posts').doc(postId).delete();
   }
 
   /// 发布帖子。成功返回新文档 id。

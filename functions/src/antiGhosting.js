@@ -12,15 +12,17 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const { _generateRecapCard } = require('./ai');
+const { _sendNotification } = require('./notifications');
 
 const db = admin.firestore();
 
 // ─────────────────────────────────────────────────────
-// 每分钟检查：是否有搭子到了见面时间 → 开启签到窗口
+// 每 5 分钟检查：是否有搭子到了见面时间 → 开启签到窗口
+// M-8 优化：从每分钟降低到每 5 分钟，减少全表扫描 Firestore 成本
 // ─────────────────────────────────────────────────────
 exports.openCheckinWindow = functions
-  .region('asia-east1')
-  .pubsub.schedule('every 1 minutes')
+  .region('asia-southeast1')
+  .pubsub.schedule('every 5 minutes')
   .onRun(async () => {
     const now = admin.firestore.Timestamp.now();
     const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
@@ -63,7 +65,7 @@ exports.openCheckinWindow = functions
 // 支持 GPS 验证（前端传入经纬度，后端验证距离）
 // ─────────────────────────────────────────────────────
 exports.submitCheckin = functions
-  .region('asia-east1')
+  .region('asia-southeast1')
   .https.onCall(async (data, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', '请先登录');
 
@@ -124,7 +126,7 @@ exports.submitCheckin = functions
 // 每5分钟检查：签到窗口是否超时 → 判断爽约
 // ─────────────────────────────────────────────────────
 exports.onCheckinTimeout = functions
-  .region('asia-east1')
+  .region('asia-southeast1')
   .pubsub.schedule('every 5 minutes')
   .onRun(async () => {
     const now = admin.firestore.Timestamp.now();
@@ -291,7 +293,15 @@ async function _releaseDeposits(matchId) {
 // ─────────────────────────────────────────────────────
 // 占位：推送通知（在 notifications.js 中实现）
 // ─────────────────────────────────────────────────────
-async function _sendCheckinNotification(uid, matchId) {}
-async function _sendGhostedNotification(uid, matchId) {}
-async function _sendAttendedNotification(uid, matchId) {}
-async function _sendReviewReadyNotification(uid, matchId) {}
+async function _sendCheckinNotification(uid, matchId) {
+  await _sendNotification(uid, '签到提醒', '搭子活动开始了，快来签到吧！', { type: 'checkin', matchId });
+}
+async function _sendGhostedNotification(uid, matchId) {
+  await _sendNotification(uid, '未签到提醒', '你错过了一次搭子活动，请注意按时签到', { type: 'ghosted', matchId });
+}
+async function _sendAttendedNotification(uid, matchId) {
+  await _sendNotification(uid, '活动完成', '搭子到了但对方未到，你的信用不受影响', { type: 'attended', matchId });
+}
+async function _sendReviewReadyNotification(uid, matchId) {
+  await _sendNotification(uid, '快来评价吧', '搭子活动已完成，给对方一个评价吧！', { type: 'review_ready', matchId });
+}

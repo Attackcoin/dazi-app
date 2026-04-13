@@ -34,7 +34,7 @@ async function sendNotification(uid, title, body, data = {}) {
 // 注册/更新 FCM Token（前端每次启动时调用）
 // ─────────────────────────────────────────────────────
 exports.registerFcmToken = functions
-  .region('asia-east1')
+  .region('asia-southeast1')
   .https.onCall(async (data, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', '请先登录');
 
@@ -47,13 +47,15 @@ exports.registerFcmToken = functions
 // 监听新申请 → 通知发布者
 // ─────────────────────────────────────────────────────
 exports.onNewApplication = functions
-  .region('asia-east1')
+  .region('asia-southeast1')
   .firestore.document('applications/{appId}')
   .onCreate(async (snap) => {
     const app = snap.data();
     if (app.status !== 'pending') return; // 候补不通知
 
     const postDoc = await db.collection('posts').doc(app.postId).get();
+    // H-6 修复：post 可能已被删除，不存在时直接返回，避免触发器 crash 无限重试
+    if (!postDoc.exists) return null;
     const post = postDoc.data();
 
     const applicantDoc = await db.collection('users').doc(app.applicantId).get();
@@ -71,7 +73,7 @@ exports.onNewApplication = functions
 // 监听申请状态变化 → 通知申请者
 // ─────────────────────────────────────────────────────
 exports.onApplicationStatusChange = functions
-  .region('asia-east1')
+  .region('asia-southeast1')
   .firestore.document('applications/{appId}')
   .onUpdate(async (change) => {
     const before = change.before.data();
@@ -80,6 +82,7 @@ exports.onApplicationStatusChange = functions
     if (before.status === after.status) return;
 
     const postDoc = await db.collection('posts').doc(after.postId).get();
+    if (!postDoc.exists) return null;
     const post = postDoc.data();
 
     if (after.status === 'accepted') {
@@ -110,7 +113,7 @@ exports.onApplicationStatusChange = functions
 // 每天检查：搭子开始前 2 小时发提醒
 // ─────────────────────────────────────────────────────
 exports.sendPreMeetingReminder = functions
-  .region('asia-east1')
+  .region('asia-southeast1')
   .pubsub.schedule('every 30 minutes')
   .onRun(async () => {
     const now = new Date();
@@ -145,7 +148,7 @@ exports.sendPreMeetingReminder = functions
 // 监听月报生成 → 通知用户
 // ─────────────────────────────────────────────────────
 exports.onMonthlyReportGenerated = functions
-  .region('asia-east1')
+  .region('asia-southeast1')
   .firestore.document('monthlyReports/{reportId}')
   .onCreate(async (snap) => {
     const report = snap.data();
@@ -166,3 +169,5 @@ function _formatTime(timestamp) {
     month: 'long', day: 'numeric', weekday: 'long', hour: '2-digit', minute: '2-digit'
   });
 }
+
+exports._sendNotification = sendNotification;

@@ -1,0 +1,47 @@
+rules_version = '2';
+
+// Firebase Storage 安全规则 - dazi-app
+// 原则：默认拒绝，按路径白名单放行。
+// 限制：图片 ≤5MB，Content-Type 限定为 jpeg/png/webp/gif/heic/heif（白名单，排除 SVG 防 XSS）。
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ---- 工具函数 ----
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isImageUpload() {
+      return request.resource != null
+          && request.resource.size < 5 * 1024 * 1024
+          && request.resource.contentType.matches('image/(jpeg|png|webp|gif|heic|heif)');
+    }
+
+    // ---- 用户头像 ----
+    // 实际代码路径：avatars/{uid}/{timestamp}.jpg
+    // 见 client/lib/presentation/features/onboarding/widgets/step_name_avatar.dart:58
+    match /avatars/{userId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn()
+                   && request.auth.uid == userId
+                   && isImageUpload();
+    }
+
+    // ---- 帖子图片 ----
+    // 实际代码路径：posts/{uid}/{timestamp}_{filename}
+    // 见 client/lib/data/repositories/post_create_repository.dart:85
+    // 注意：文件名中的 uid 即作者本人（帖子图片先上传、再写 Firestore），
+    //       因此用 auth.uid == userId 约束即可，无需 firestore.get() 跨服务校验。
+    match /posts/{userId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn()
+                   && request.auth.uid == userId
+                   && isImageUpload();
+    }
+
+    // ---- 默认拒绝 ----
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

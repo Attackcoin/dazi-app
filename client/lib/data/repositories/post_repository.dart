@@ -43,6 +43,18 @@ class PostRepository {
           (snap) => snap.exists ? Post.fromFirestore(snap) : null,
         );
   }
+
+  /// 某个用户发布的帖子列表（按创建时间倒序）。
+  /// 用于 profile 页"我发布的"分区。限 [limit] 条防止大列表拖慢。
+  Stream<List<Post>> watchPostsByUser(String uid, {int limit = 20}) {
+    return _firestore
+        .collection('posts')
+        .where('userId', isEqualTo: uid)
+        .orderBy('createdAt', descending: true)
+        .limit(limit)
+        .snapshots()
+        .map((snap) => snap.docs.map(Post.fromFirestore).toList());
+  }
 }
 
 /// 广场 feed provider — 可按城市/分类过滤。
@@ -55,6 +67,11 @@ final feedProvider = StreamProvider.family<List<Post>, FeedQuery>((ref, q) {
 
 final postByIdProvider = StreamProvider.family<Post?, String>((ref, id) {
   return ref.watch(postRepositoryProvider).watchPost(id);
+});
+
+/// 某 uid 发布的帖子列表。profile 页"我发布的"分区使用。
+final postsByUserProvider = StreamProvider.family<List<Post>, String>((ref, uid) {
+  return ref.watch(postRepositoryProvider).watchPostsByUser(uid);
 });
 
 class FeedQuery {

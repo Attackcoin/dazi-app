@@ -12,18 +12,59 @@
 
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const crypto = require('crypto');
 
 const db = admin.firestore();
+
+// ─────────────────────────────────────────────────────
+// 内部：HMAC-SHA256 签名验证（临时保护，生产环境需替换为真实支付平台签名验证）
+// 调用方需在请求头 x-dazi-signature 中携带 HMAC-SHA256(secret, body)
+// ─────────────────────────────────────────────────────
+function verifyCallbackSignature(req) {
+  const secret = process.env.PAYMENT_CALLBACK_SECRET;
+  if (!secret) {
+    // TODO: 配置 PAYMENT_CALLBACK_SECRET 环境变量
+    // 生产环境未配置时拒绝所有请求，防止未保护的回调被滥用
+    console.error('PAYMENT_CALLBACK_SECRET 未配置，拒绝回调请求');
+    return false;
+  }
+  const signature = req.headers['x-dazi-signature'];
+  if (!signature) return false;
+
+  const body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(body)
+    .digest('hex');
+
+  // 使用 timingSafeEqual 防止时序攻击
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(signature, 'hex'),
+      Buffer.from(expected, 'hex')
+    );
+  } catch {
+    return false;
+  }
+}
+
+// 合法支付渠道枚举
+const VALID_PAY_CHANNELS = ['wechat', 'alipay'];
 
 // ─────────────────────────────────────────────────────
 // 发起押金冻结（用户确认参加 + 有押金要求时调用）
 // ─────────────────────────────────────────────────────
 exports.freezeDeposit = functions
-  .region('asia-east1')
+  .region('asia-southeast1')
   .https.onCall(async (data, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', '请先登录');
 
     const { matchId, payChannel } = data; // payChannel: 'wechat' | 'alipay'
+
+    // 枚举校验：防止注入非法渠道
+    if (!VALID_PAY_CHANNELS.includes(payChannel)) {
+      throw new functions.https.HttpsError('invalid-argument', `payChannel 无效，必须是 ${VALID_PAY_CHANNELS.join(' 或 ')}`);
+    }
     const uid = context.auth.uid;
 
     const matchDoc = await db.collection('matches').doc(matchId).get();
@@ -44,7 +85,10 @@ exports.freezeDeposit = functions
     // 检查芝麻信用是否可以免押金
     const userDoc = await db.collection('users').doc(uid).get();
     const user = userDoc.data();
-    if (user.sesameAuthorized && user.sesameScore >= 750) {
+    // 注：AppUser 模型只有 sesameAuthorized (bool)，没有 sesameScore 字段。
+    // 原逻辑 `sesameAuthorized && sesameScore >= 750` 永为 false（sesameScore 恒 undefined）。
+    // D3 信用承诺 MVP 下本函数为 dead code，此处仅修复字段不一致 bug。
+    if (user.sesameAuthorized) {
       // 芝麻信用担保，无需实际押金
       await db.collection('deposits').add({
         userId: uid,
@@ -94,11 +138,16 @@ exports.freezeDeposit = functions
 // 生产环境：配置为支付平台的 Webhook URL
 // ─────────────────────────────────────────────────────
 exports.depositPaymentCallback = functions
-  .region('asia-east1')
+  .region('asia-southeast1')
   .https.onRequest(async (req, res) => {
-    // TODO: 验证支付平台签名（防止伪造回调）
-    // const isValid = WechatPay.verifySignature(req.headers, req.body);
-    // if (!isValid) { res.status(400).send('Invalid signature'); return; }
+    // 签名验证：当前使用基于 PAYMENT_CALLBACK_SECRET 的 HMAC-SHA256 临时保护
+    // TODO: 接入真实支付平台（微信支付/支付宝）后，替换为官方 SDK 的签名验证方法：
+    //   微信支付 v3: WechatPay.verifySignature(req.headers, req.body, cert)
+    //   支付宝:      AlipaySdk.verifyNotify(req.body)
+    if (!verifyCallbackSignature(req)) {
+      res.status(401).send('Invalid signature');
+      return;
+    }
 
     const { orderId, status } = req.body;
 
@@ -123,7 +172,7 @@ exports.depositPaymentCallback = functions
 // 押金退款（取消活动/提前退出）
 // ─────────────────────────────────────────────────────
 exports.refundDeposit = functions
-  .region('asia-east1')
+  .region('asia-southeast1')
   .https.onCall(async (data, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', '请先登录');
 

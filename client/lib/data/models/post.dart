@@ -89,6 +89,67 @@ class Post {
       shareUrl: data['shareUrl'] as String?,
     );
   }
+
+  /// 从 Algolia hit 构造 Post（仅包含搜索所需字段；非搜索字段给安全默认值）。
+  ///
+  /// 与 `fromFirestore` 的关键差异：
+  /// - `time` / `createdAt` 在 Algolia 里是 `int` 毫秒时间戳（见
+  ///   `functions/src/algoliaSync.js:51,57`），而 Firestore 里是 `Timestamp`。
+  /// - `location` 由 `locationName` + `city` + `_geoloc` 三个字段重建。
+  /// - `objectID` 映射为 `id`。
+  /// - 未同步到 Algolia 的字段（min/gender/waitlist/expires/shareUrl 等）
+  ///   使用与 `fromFirestore` 空值路径一致的默认值。
+  factory Post.fromAlgoliaHit(Map<String, dynamic> hit) {
+    final timeMs = (hit['time'] as num?)?.toInt();
+    final createdAtMs = (hit['createdAt'] as num?)?.toInt();
+
+    PostLocation? location;
+    final name = hit['locationName'] as String? ?? '';
+    final city = hit['city'] as String? ?? '';
+    final geo = hit['_geoloc'];
+    double? lat;
+    double? lng;
+    if (geo is Map) {
+      lat = (geo['lat'] as num?)?.toDouble();
+      lng = (geo['lng'] as num?)?.toDouble();
+    }
+    if (name.isNotEmpty || city.isNotEmpty || lat != null || lng != null) {
+      location = PostLocation(
+        name: name,
+        lat: lat,
+        lng: lng,
+        city: city.isEmpty ? null : city,
+      );
+    }
+
+    return Post(
+      id: (hit['objectID'] as String?) ?? '',
+      userId: '',
+      category: hit['category'] as String? ?? '',
+      title: hit['title'] as String? ?? '',
+      description: hit['description'] as String? ?? '',
+      images: const [],
+      time: timeMs == null
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(timeMs),
+      location: location,
+      totalSlots: (hit['totalSlots'] as num?)?.toInt() ?? 0,
+      minSlots: 2,
+      genderQuota: null,
+      acceptedGender: const GenderCount(male: 0, female: 0),
+      costType: CostType.fromString(hit['costType'] as String?),
+      depositAmount: 0,
+      isInstant: hit['isInstant'] as bool? ?? false,
+      isSocialAnxietyFriendly: hit['isSocialAnxietyFriendly'] as bool? ?? false,
+      waitlist: const [],
+      status: PostStatus.fromString(hit['status'] as String?),
+      createdAt: createdAtMs == null
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(createdAtMs),
+      expiresAt: null,
+      shareUrl: null,
+    );
+  }
 }
 
 class PostLocation {

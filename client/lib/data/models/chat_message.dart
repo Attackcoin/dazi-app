@@ -2,6 +2,8 @@
 class ChatMessage {
   final String id;
   final String senderId;
+  /// 发送时写入的发送者昵称冗余字段，避免 N+1 查询 Firestore users 集合。
+  final String? senderName;
   final ChatMessageType type;
   final String text;
   final String? mediaUrl;
@@ -13,6 +15,7 @@ class ChatMessage {
   const ChatMessage({
     required this.id,
     required this.senderId,
+    this.senderName,
     required this.type,
     required this.text,
     required this.mediaUrl,
@@ -35,6 +38,7 @@ class ChatMessage {
     return ChatMessage(
       id: id,
       senderId: m['senderId'] as String? ?? '',
+      senderName: m['senderName'] as String?,
       type: ChatMessageType.fromString(m['type'] as String?),
       text: m['text'] as String? ?? '',
       mediaUrl: m['mediaUrl'] as String?,
@@ -48,6 +52,7 @@ class ChatMessage {
 
   Map<String, dynamic> toMap() => {
         'senderId': senderId,
+        if (senderName != null) 'senderName': senderName,
         'type': type.value,
         'text': text,
         if (mediaUrl != null) 'mediaUrl': mediaUrl,

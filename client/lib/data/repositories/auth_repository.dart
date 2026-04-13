@@ -2,12 +2,15 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/app_user.dart';
 
 final firebaseAuthProvider = Provider<FirebaseAuth>((_) => FirebaseAuth.instance);
 final firestoreProvider = Provider<FirebaseFirestore>((_) => FirebaseFirestore.instance);
+final firebaseStorageProvider =
+    Provider<FirebaseStorage>((_) => FirebaseStorage.instance);
 
 /// 当前登录用户的 stream。null 表示未登录。
 final authStateProvider = StreamProvider<User?>((ref) {
@@ -43,10 +46,10 @@ class AuthRepository {
 
   String? _verificationId;
 
-  /// 发送手机验证码（中国大陆手机号需 +86 前缀）。
+  /// 发送手机验证码。[phone] 应为带国家码的完整号码（如 +8613800138000）。
   /// 当 codeSent 或 verificationCompleted 触发时 Future 完成。
   Future<void> sendPhoneCode(String phone) {
-    final fullPhone = phone.startsWith('+') ? phone : '+86$phone';
+    final fullPhone = phone.startsWith('+') ? phone : '+$phone';
     final completer = Completer<void>();
 
     _auth.verifyPhoneNumber(

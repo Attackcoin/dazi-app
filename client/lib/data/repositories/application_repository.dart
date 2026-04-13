@@ -6,7 +6,7 @@ import '../models/application.dart';
 import 'auth_repository.dart';
 
 /// Cloud Functions 部署区域 —— 与 functions/src/applications.js 保持一致。
-const _functionsRegion = 'asia-east1';
+const _functionsRegion = 'asia-southeast1';
 
 final firebaseFunctionsProvider = Provider<FirebaseFunctions>((ref) {
   return FirebaseFunctions.instanceFor(region: _functionsRegion);
@@ -83,6 +83,27 @@ class ApplicationRepository {
         .snapshots()
         .map((snap) => snap.docs.map(Application.fromFirestore).toList());
   }
+
+  /// 申请者撤回申请（仅 pending / waitlisted 状态可撤）。
+  /// 通过 Cloud Function 处理，避免 PERMISSION_DENIED（rules 只允许发布者 update）。
+  Future<void> withdrawApplication(String applicationId) async {
+    final callable = _functions.httpsCallable('withdrawApplication');
+    await callable.call<Map<dynamic, dynamic>>({
+      'applicationId': applicationId,
+    });
+  }
+
+  /// 按申请人 uid 拉自己所有申请。profile 页"我申请的"分区使用。
+  Stream<List<Application>> watchApplicationsByApplicant(String uid,
+      {int limit = 20}) {
+    return _firestore
+        .collection('applications')
+        .where('applicantId', isEqualTo: uid)
+        .orderBy('createdAt', descending: true)
+        .limit(limit)
+        .snapshots()
+        .map((snap) => snap.docs.map(Application.fromFirestore).toList());
+  }
 }
 
 class ApplyResult {
@@ -108,4 +129,12 @@ final applicationsForPostProvider =
   return ref
       .watch(applicationRepositoryProvider)
       .watchApplicationsForPost(postId);
+});
+
+/// 按申请人 uid 拉申请列表。profile 页"我申请的"分区使用。
+final applicationsByApplicantProvider =
+    StreamProvider.family<List<Application>, String>((ref, uid) {
+  return ref
+      .watch(applicationRepositoryProvider)
+      .watchApplicationsByApplicant(uid);
 });

@@ -16,9 +16,10 @@ final chatRepositoryProvider = Provider<ChatRepository>((ref) {
   );
 });
 
-/// 聊天消息读写 —— 存储在 Firebase Realtime Database。
+/// 群聊消息读写 —— 每个局（post）一个群聊。
 ///
-/// 路径：`chats/{chatId}/messages/{msgId}`
+/// 消息存储在 Firebase Realtime Database：`chats/{postId}/messages/{msgId}`
+/// 最后消息摘要同步到 Firestore `posts/{postId}` 便于消息列表展示。
 class ChatRepository {
   ChatRepository({
     required FirebaseDatabase database,
@@ -49,11 +50,12 @@ class ChatRepository {
     });
   }
 
-  /// 发送一条文字消息。同时更新 matches/{chatId} 的 lastMessage 字段。
+  /// 发送一条文字消息。同时更新 posts/{chatId} 的 lastMessage 字段。
   Future<void> sendText({
     required String chatId,
     required String senderId,
     required String text,
+    String? senderName,
   }) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return;
@@ -73,16 +75,47 @@ class ChatRepository {
 
     await _messagesRef(chatId).push().set(msg.toMap());
 
-    // 同步更新 match 的最后消息字段（用于消息列表展示）。
-    await _firestore.collection('matches').doc(chatId).set({
+    // 同步更新 post 的最后消息字段（消息列表展示用）。
+    final preview = senderName != null
+        ? '$senderName: ${trimmed.length > 30 ? '${trimmed.substring(0, 30)}…' : trimmed}'
+        : trimmed.length > 40 ? '${trimmed.substring(0, 40)}…' : trimmed;
+
+    await _firestore.collection('posts').doc(chatId).set({
       'lastMessageAt': Timestamp.fromMillisecondsSinceEpoch(now),
-      'lastMessagePreview': trimmed.length > 40
-          ? '${trimmed.substring(0, 40)}…'
-          : trimmed,
+      'lastMessagePreview': preview,
     }, SetOptions(merge: true));
   }
 
-  /// 标记当前用户已读最新消息（轻量写入）。
+  /// 发送一条图片消息。
+  Future<void> sendImage({
+    required String chatId,
+    required String senderId,
+    required String imageUrl,
+    String? senderName,
+  }) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final msg = ChatMessage(
+      id: '',
+      senderId: senderId,
+      type: ChatMessageType.image,
+      text: '',
+      mediaUrl: imageUrl,
+      lat: null,
+      lng: null,
+      timestamp: now,
+      readBy: {senderId: true},
+    );
+
+    await _messagesRef(chatId).push().set(msg.toMap());
+
+    final preview = senderName != null ? '$senderName: [图片]' : '[图片]';
+    await _firestore.collection('posts').doc(chatId).set({
+      'lastMessageAt': Timestamp.fromMillisecondsSinceEpoch(now),
+      'lastMessagePreview': preview,
+    }, SetOptions(merge: true));
+  }
+
+  /// 标记当前用户已读最新消息。
   Future<void> markRead({
     required String chatId,
     required String uid,

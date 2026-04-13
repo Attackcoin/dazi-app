@@ -1,14 +1,6 @@
-// 占位文件 — 运行前必须替换
-//
-// 生成真实的 firebase_options.dart：
-//   1. 安装 FlutterFire CLI: `dart pub global activate flutterfire_cli`
-//   2. 登录 Firebase: `firebase login`
-//   3. 进入项目目录: `cd client`
-//   4. 运行: `flutterfire configure --project=dazi-dev`
-//   5. 选择 iOS + Android 平台
-// 该命令会自动生成真实的 firebase_options.dart 并覆盖此文件。
-//
-// 参考: https://firebase.google.com/docs/flutter/setup
+// 由 `flutterfire configure --project=dazi-dev` 生成（2026-04-09）。
+// 如需重新生成，在 `client/` 目录下再跑一次该命令即可。
+// DO NOT edit manually —— 任何手工修改在下次 flutterfire configure 时会被覆盖。
 
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
@@ -17,7 +9,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError('Web 平台暂未配置，请运行 flutterfire configure');
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -31,21 +23,35 @@ class DefaultFirebaseOptions {
     }
   }
 
-  // ⚠️ 占位值 — 运行 flutterfire configure 后会自动覆盖
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'PLACEHOLDER_ANDROID_API_KEY',
-    appId: 'PLACEHOLDER_APP_ID',
-    messagingSenderId: 'PLACEHOLDER_SENDER_ID',
+    apiKey: 'AIzaSyB-PDiMcBarNdxtWzdejnOqdfWoej-POp0',
+    appId: '1:768282971908:android:4ce4e2bb4ed21fae6dca51',
+    messagingSenderId: '768282971908',
     projectId: 'dazi-dev',
-    storageBucket: 'dazi-dev.appspot.com',
+    databaseURL: 'https://dazi-dev-default-rtdb.asia-southeast1.firebasedatabase.app',
+    storageBucket: 'dazi-dev.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'PLACEHOLDER_IOS_API_KEY',
-    appId: 'PLACEHOLDER_APP_ID',
-    messagingSenderId: 'PLACEHOLDER_SENDER_ID',
+    apiKey: 'AIzaSyBy0ENmvseDJf7AabIvhFpXSRk1rOC9leQ',
+    appId: '1:768282971908:ios:b2cf603a86c7c0ee6dca51',
+    messagingSenderId: '768282971908',
     projectId: 'dazi-dev',
-    storageBucket: 'dazi-dev.appspot.com',
+    databaseURL: 'https://dazi-dev-default-rtdb.asia-southeast1.firebasedatabase.app',
+    storageBucket: 'dazi-dev.firebasestorage.app',
+    iosClientId: '768282971908-k9mv26j3qor01ugd2l8dk9rsrv9gitd2.apps.googleusercontent.com',
     iosBundleId: 'app.dazi.daziApp',
   );
+
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyDd1TNNA9-l-lDFfL4fqQkHzJ6NJ2d_wGQ',
+    appId: '1:768282971908:web:2f027e1fe19b35aa6dca51',
+    messagingSenderId: '768282971908',
+    projectId: 'dazi-dev',
+    authDomain: 'dazi-dev.firebaseapp.com',
+    databaseURL: 'https://dazi-dev-default-rtdb.asia-southeast1.firebasedatabase.app',
+    storageBucket: 'dazi-dev.firebasestorage.app',
+    measurementId: 'G-TC2H1EJVHS',
+  );
+
 }
