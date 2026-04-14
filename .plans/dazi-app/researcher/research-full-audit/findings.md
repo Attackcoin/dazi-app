@@ -277,3 +277,90 @@ onRequest: depositPaymentCallback, algoliaBackfill
 
 *基于完整源码静态阅读，不含运行时测试结果。researcher 2026-04-12*
 
+
+---
+
+## 增量复核 2026-04-13 (researcher)
+
+> 基于 2026-04-12 版 findings,重新抓取当前 HEAD 状态并补扫 Glass Morph / i18n / a11y / 文件规模维度。
+
+### [OK] 原 CRITICAL/HIGH 已闭环
+
+- [OK] firestore.rules:12-33 users 字段白名单 + rating/ghostCount/isRestricted 创建时必须默认值;update 只允许业务字段。原 C1 关闭。
+- [OK] firestore.rules:42-65 posts 字段白名单,create status 强制 'open',update 只放行业务字段 + status=cancelled。原 H3 关闭。
+- [OK] deposits.js:147 verifyCallbackSignature HMAC-SHA256 已接入。原 C2 关闭。
+- [OK] application_repository.dart:91 withdrawApplication 改走 httpsCallable。原 H-BUG 关闭。
+- [OK] firestore.indexes.json 15 条索引覆盖 posts/applications/matches/reviews/deposits 全部热点查询(含 participants arrayContains + lastMessageAt、applicantId+createdAt、matches status+meetTime 等原缺失 9 条)。原 H-IDX 关闭。
+- [OK] match_repository.dart:23 / application_repository.dart:84,105 全部加 .limit。原 H-PERF 关闭。
+- [OK] applications.js:304-309 submitReview 改为原子 increment(ratingSum/ratingCount),均值在前端算。原 H-AVG 关闭。
+- [OK] reviews rules:108 复合 ID + !exists 防重复 + Function 层双保险。原 M-REV 关闭。
+- [OK] Functions 全部 .region('asia-southeast1') 统一。
+
+### [BUG] SD-5 违反:withOpacity 残留 16 处 / 10 文件
+
+透明度必须用 `color.withValues(alpha: x)`(Flutter 3.27+),但仍有残留:
+- `glass_button.dart:1` / `home_screen.dart:1` / `create_post_screen.dart:2` / `search_screen.dart:1` / `post_detail_screen.dart:1` / `post_card.dart:2` / `profile_screen.dart:8` / `discover_screen.dart` / `chat_screen.dart` / `messages_screen.dart` / `swipe_screen.dart` / `recap_card_screen.dart` / `message_bubble.dart` / `apply_sheet.dart`
+- 其中 `profile_screen.dart` 独占 8 处,是最大违规源。
+
+> [CUSTODIAN-2026-04-13 回填]
+> 本条目已过期,不再成立。custodian 独立再验证 `grep -rn 'withOpacity(' C:\dazi-app\client\lib` → **0 匹配 / 0 文件**,baseline 实际已清零。
+> 清理在本次审计之前已由 commits `714b2f8` + `14a7553`(后者为 "4 reviewer WARN")提前完成,本段数据为盘点时过期快照,非实际违规。
+> 交叉引用:`C:\dazi-app\.plans\dazi-app\frontend-dev\task-fix-high-sd5-and-split-profile\findings.md` 的 baseline 验证小节。
+> 保留原文以审计透明,实际 SD-5 withOpacity 违规数 = 0。
+
+### [GAP] 黄金原则 800 行阈值被突破
+
+- `profile_screen.dart` **820 行 > 800**(上次 custodian audit 时 770,已越线),必须拆分。建议抽出 tab 子 widget 和 settings section。
+- `swipe_screen.dart` 709 / `create_post_screen.dart` 686 / `post_detail_screen.dart` 561 / `discover_screen.dart` 486 / `home_screen.dart` 483 / `chat_screen.dart` 382:未超阈值但偏大,纳入 backlog。
+
+### [GAP] RD-5 i18n 全空
+
+- 全项目 grep `intl|AppLocalizations|\.tr\(|S\.of\(` → **0 匹配**
+- 所有 UI 文案硬编码中文字面量,无任何 arb/翻译基础设施
+- 若要出海或支持繁体,需先引入 `flutter_localizations + intl` + `extract_to_arb`
+
+### [GAP] RD-5 a11y 覆盖不均
+
+- `Semantics(` 仅 16 处,分布在 9 个文件:glass_button(1)、create_post(2)、home_screen(1)、search(1)、post_detail(1)、profile_screen(7)、post_card(2 含 1 个 ExcludeSemantics)
+- 未覆盖的关键交互:swipe_screen 的滑卡按钮、chat_input_bar 发送按钮、review_screen 星级打分、checkin_screen 的扫码/生成 QR 按钮、messages_screen 的 match tile、onboarding 各步骤的选择控件
+- 图片(post images / avatar)无 alt 语义
+
+### [RESEARCH] 测试覆盖现状
+
+client/test (9 个):
+- data/repositories/post_create_repository_test.dart
+- data/repositories/search_repository_test.dart
+- presentation/features/home/home_screen_test.dart
+- presentation/features/profile/profile_screen_test.dart
+- presentation/features/search/search_screen_test.dart
+- core/theme/dazi_colors_test.dart (新)
+- core/widgets/glass_button_test.dart (新)
+- core/widgets/glass_card_test.dart (新)
+- widget_test.dart
+
+client/integration_test (5 个 journey):
+- journey_login_test / journey_feed_apply_test / journey_post_create_test / journey_profile_test / journey_smoke_test
+
+**缺口**:auth/application/match/chat/review/checkin/user/category Repository 无单测;functions/src/ 全部 0 单测;Firestore rules 无回归测试(原 AUTOMATE-1 仍 open)。
+
+### [RESEARCH] TODO 扫描(当前)
+
+- `deposits.js:26,107,144,206`:押金 SDK + 真实签名验证接入
+- `antiGhosting.js:92,285,290`:押金扣款/解冻接入
+- `create_post_screen.dart:30,189`:地图选点 + STT 语音
+- `post_card.dart:105,115,121,205,210`:Post model 缺 publisher/participant avatar 字段
+- `post_detail_screen.dart:229`:同上 participantAvatarUrls
+
+### [RESEARCH] listener/snapshots 盘点(共 13 处)
+
+auth_repository:28(user doc) / application_repository:72,85,106 / category_repository:24 / match_repository:24,29 / post_repository:36,42,55 / user_repository:48,109。均通过 StreamProvider 暴露,Riverpod 自动 dispose。**建议 reviewer 复核**:每个 StreamProvider 是否 family 化正确,以及 UI autoDispose 策略是否被误用(family 不 autoDispose 会内存泄漏)。
+
+### 评级
+
+- RD-1 UI 精美度:**ADEQUATE** (Glass Morph 覆盖完整,withOpacity 16 处扣分)
+- RD-2 产品边界:**ADEQUATE** (有骨架+空态,error retry 6 处缺失扣分)
+- RD-3 Firebase 成本:**ADEQUATE** (索引+limit+atomic 已做,v1/v2 混用 + 无缩略图 + openCheckinWindow 1min 扣分)
+- RD-4 测试覆盖:**WEAK** (核心 repo + functions 0 单测)
+- RD-5 a11y/i18n:**WEAK** (i18n 0 基建,Semantics 覆盖 <20%)
+
+*researcher 2026-04-13*

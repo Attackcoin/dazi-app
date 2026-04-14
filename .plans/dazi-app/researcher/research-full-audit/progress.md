@@ -36,3 +36,7 @@
 - findings.md 写入完成（7个维度，2 CRITICAL + 10 HIGH + 7 MEDIUM + 5 LOW）
 - 根 findings.md 添加索引条目
 - 任务状态: **完成**
+[2026-04-13] T0a 启动:现有 findings.md (2026-04-12 版) 已覆盖 7 维度;本次补扫 Glass Morph 遗漏/i18n/a11y/RD-1 维度并生成 report-to-lead.md
+[scan] GlassTheme 覆盖=36 页面, AppColors presentation 全清, withOpacity 残留 16 处 in 7 files (SD-5 违反), profile_screen 820>800 (GR 违反)
+[scan2] firestore.rules 已字段白名单化 users/posts (原 CRIT 修复), indexes +9 全补, withdrawApplication 改走 Function (原 HIGH 修复), deposits 签名验证已实现 (HMAC), functions region 全 asia-southeast1 统一, i18n 0 匹配全硬编码中文
+[DONE] 2026-04-13 增量复核完成: findings.md 追加 2026-04-13 段, report-to-lead.md 生成, 根 findings 索引更新

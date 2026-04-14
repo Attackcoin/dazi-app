@@ -10,6 +10,7 @@
 |------|--------|------|
 | T1: UI 修复 (HIGH + MEDIUM) | `task-ui-fixes/` | 完成，flutter analyze 零错误 |
 | Fix HIGH SD-5 + split profile_screen | `task-fix-high-sd5-and-split-profile/` | 完成，CI 46/46 PASS (2026-04-13) |
+| T1: Repository 单测补齐 + ErrorRetryView 组件化 | `task-t1-tests-and-retry/` | 进行中 (2026-04-13) |
 
 ---
 

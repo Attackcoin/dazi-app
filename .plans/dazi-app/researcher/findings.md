@@ -8,7 +8,7 @@
 
 | 任务 | 文件夹 | 状态 | 摘要 |
 |------|--------|------|------|
-| T0a 全面代码库盘点 | research-full-audit/ | 完成 2026-04-12 | 2 CRITICAL, 10 HIGH, 7 MEDIUM, 5 LOW |
+| T0a 全面代码库盘点 | research-full-audit/ | 完成 2026-04-13(已由 custodian 2026-04-13 回填修正) | 0 CRIT 残留, RD-1/2/3 ADEQUATE, RD-4/5 WEAK; ~~SD-5 违反 16 处 withOpacity~~ → 实际 0 匹配(已由 714b2f8+14a7553 清零),profile_screen 820>800 |
 
 详细发现见: `.plans/dazi-app/researcher/research-full-audit/findings.md`
 

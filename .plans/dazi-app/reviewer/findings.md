@@ -11,3 +11,5 @@
 | T0b 全代码库深度审查 | `review-full-audit/findings.md` | 完成 2026-04-12 | [BLOCK] |
 
 ---
+---
+| T0b 全代码库深度审查(独立复核) | `review-full-audit/findings.md` | 完成 2026-04-13 | [WARN] |

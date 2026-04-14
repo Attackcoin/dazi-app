@@ -9,6 +9,8 @@
 | 任务文件夹 | 状态 | 摘要 |
 |-----------|------|------|
 | [task-security-fixes/](task-security-fixes/) | 完成 | 修复 reviewer [BLOCK] 的 9 个 CRITICAL/HIGH/MEDIUM 安全问题 |
+| [task-t1-security-fixes/](task-t1-security-fixes/) | 完成 2026-04-14 | T1 全面审查后 7 HIGH + 4 MED 并发/鉴权修复 + Jest 基建；reviewer [OK] |
+| [task-v2-migration-eval/](task-v2-migration-eval/) | 完成 2026-04-14 | M-8 v1→v2 迁移评估 — 推荐 DEFERRED，触发条件见第 6 节 |
 
 ---
 
