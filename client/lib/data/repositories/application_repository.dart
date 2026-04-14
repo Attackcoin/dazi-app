@@ -75,11 +75,13 @@ class ApplicationRepository {
   }
 
   /// 发布者查看某个 post 的全部申请。
-  Stream<List<Application>> watchApplicationsForPost(String postId) {
+  Stream<List<Application>> watchApplicationsForPost(String postId,
+      {int limit = 50}) {
     return _firestore
         .collection('applications')
         .where('postId', isEqualTo: postId)
         .orderBy('createdAt', descending: true)
+        .limit(limit)
         .snapshots()
         .map((snap) => snap.docs.map(Application.fromFirestore).toList());
   }

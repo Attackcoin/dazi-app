@@ -89,37 +89,50 @@ Future<User> signInAsTestUser(TestUser u) async {
   return cred.user!;
 }
 
-/// 登录 + 在 Firestore 写入对应的 users/{uid} 文档。
+/// 登录 + 在 Firestore 写入对应的 users/{uid} 文档（如尚未存在）。
 /// 大多数 journey 用这个入口：一行得到完整登录态。
+///
+/// 幂等：如果 users/{uid} 已存在则跳过（firestore.rules `users update` 规则
+/// 只允许修改白名单字段，重写全量会被拒；且重跑时这些字段值已和预期一致）。
 Future<User> signInAndSeed(TestUser u) async {
   final user = await signInAsTestUser(u);
-  await _writeUserDoc(user.uid, u);
+  await _writeUserDocIfMissing(user.uid, u);
   return user;
 }
 
-Future<void> _writeUserDoc(String uid, TestUser u) async {
-  await FirebaseFirestore.instance.doc('users/$uid').set({
+Future<void> _writeUserDocIfMissing(String uid, TestUser u) async {
+  final ref = FirebaseFirestore.instance.doc('users/$uid');
+  final snap = await ref.get();
+  if (snap.exists) return;
+
+  // 字段严格按 firestore.rules `users create` 白名单（L12-27）：
+  // 仅允许 keys: name,bio,avatar,city,gender,age,tags,fcmToken,
+  //   sesameAuthorized,notificationSettings,rating,reviewCount,
+  //   ratingSum,ratingCount,ghostCount,totalMeetups,badges,isRestricted,
+  //   createdAt,updatedAt
+  // 信誉/风控字段必须为默认值：
+  //   rating==5.0, reviewCount==0, ratingSum==0, ratingCount==0,
+  //   ghostCount==0, totalMeetups==0, badges.size()==0, isRestricted==false
+  final age = DateTime.now().year - u.birthYear;
+  await ref.set(<String, dynamic>{
     'name': u.name,
-    'avatar': '',
     'bio': '',
+    'avatar': '',
+    'city': u.city,
     'gender': u.gender,
-    'birthYear': u.birthYear,
-    'phone': u.phone,
+    'age': age,
     'tags': <String>[],
+    'sesameAuthorized': false,
+    'notificationSettings': <String, dynamic>{},
     'rating': 5.0,
     'reviewCount': 0,
+    'ratingSum': 0,
+    'ratingCount': 0,
     'ghostCount': 0,
-    'isRestricted': false,
-    'verificationLevel': 1,
-    'sesameAuthorized': false,
     'totalMeetups': 0,
     'badges': <String>[],
-    'city': u.city,
-    'blockedUsers': <String>[],
-    'emergencyContacts': <Map<String, String>>[],
-    'notificationsPrefs': <String, bool>{},
-    'privacyPrefs': <String, bool>{},
+    'isRestricted': false,
     'createdAt': FieldValue.serverTimestamp(),
-    'lastActive': FieldValue.serverTimestamp(),
+    'updatedAt': FieldValue.serverTimestamp(),
   });
 }

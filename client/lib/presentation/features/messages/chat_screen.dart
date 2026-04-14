@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/dazi_colors.dart';
 import '../../../core/theme/glass_theme.dart';
+import '../../../core/widgets/error_retry_view.dart';
 import '../../../core/widgets/glow_background.dart';
 import '../../../data/models/chat_message.dart';
 import '../../../data/repositories/auth_repository.dart';
@@ -145,25 +146,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               child: messagesAsync.when(
                 loading: () =>
                     const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.error_outline, size: 48,
-                            color: gt.colors.textTertiary),
-                        const SizedBox(height: 12),
-                        Text('消息加载失败：$e', textAlign: TextAlign.center),
-                        const SizedBox(height: 20),
-                        FilledButton.tonal(
-                          onPressed: () =>
-                              ref.invalidate(chatMessagesProvider(widget.chatId)),
-                          child: const Text('重试'),
-                        ),
-                      ],
-                    ),
-                  ),
+                error: (e, _) => ErrorRetryView(
+                  error: e,
+                  message: '消息加载失败，请重试',
+                  onRetry: () =>
+                      ref.invalidate(chatMessagesProvider(widget.chatId)),
                 ),
                 data: (messages) {
                   if (messages.isEmpty) return const _EmptyChat();

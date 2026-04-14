@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/glass_theme.dart';
 import '../../../core/widgets/celebration_overlay.dart';
+import '../../../core/widgets/error_retry_view.dart';
 import '../../../core/widgets/glass_button.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/glow_background.dart';
@@ -137,26 +138,10 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen>
         ),
         body: matchAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.error_outline, size: 48,
-                      color: gt.colors.textSecondary),
-                  const SizedBox(height: 12),
-                  Text('加载失败：$e', textAlign: TextAlign.center,
-                      style: TextStyle(color: gt.colors.textPrimary)),
-                  const SizedBox(height: 20),
-                  FilledButton.tonal(
-                    onPressed: () =>
-                        ref.invalidate(matchByIdProvider(widget.matchId)),
-                    child: const Text('重试'),
-                  ),
-                ],
-              ),
-            ),
+          error: (e, _) => ErrorRetryView(
+            error: e,
+            onRetry: () =>
+                ref.invalidate(matchByIdProvider(widget.matchId)),
           ),
           data: (match) {
             if (match == null) return Center(child: Text('搭子不存在', style: TextStyle(color: gt.colors.textPrimary)));

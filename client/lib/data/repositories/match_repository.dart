@@ -15,11 +15,12 @@ class MatchRepository {
 
   final FirebaseFirestore _firestore;
 
-  Stream<List<AppMatch>> watchMyMatches(String uid) {
+  Stream<List<AppMatch>> watchMyMatches(String uid, {int limit = 50}) {
     return _firestore
         .collection('matches')
         .where('participants', arrayContains: uid)
         .orderBy('lastMessageAt', descending: true)
+        .limit(limit)
         .snapshots()
         .map((snap) => snap.docs.map(AppMatch.fromFirestore).toList());
   }

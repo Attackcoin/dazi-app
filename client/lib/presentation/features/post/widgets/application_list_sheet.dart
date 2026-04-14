@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/glass_theme.dart';
+import '../../../../core/widgets/error_retry_view.dart';
 import '../../../../data/models/app_user.dart';
 import '../../../../data/models/application.dart';
 import '../../../../data/repositories/application_repository.dart';
@@ -54,7 +55,11 @@ class ApplicationListSheet extends ConsumerWidget {
               child: appsAsync.when(
                 loading: () =>
                     const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('加载失败：$e')),
+                error: (e, _) => ErrorRetryView(
+                  error: e,
+                  onRetry: () =>
+                      ref.invalidate(applicationsForPostProvider(postId)),
+                ),
                 data: (apps) {
                   if (apps.isEmpty) {
                     return Padding(

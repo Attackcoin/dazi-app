@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/glass_theme.dart';
 import '../../../core/widgets/animated_list_item.dart';
+import '../../../core/widgets/error_retry_view.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/glow_background.dart';
 import '../../../data/models/match.dart';
@@ -30,23 +31,9 @@ class MessagesScreen extends ConsumerWidget {
       body: GlowBackground(
         child: matchesAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.error_outline, size: 48, color: gt.colors.textTertiary),
-                  const SizedBox(height: 12),
-                  Text('加载失败：$e', textAlign: TextAlign.center),
-                  const SizedBox(height: 20),
-                  FilledButton.tonal(
-                    onPressed: () => ref.invalidate(myMatchesProvider),
-                    child: const Text('重试'),
-                  ),
-                ],
-              ),
-            ),
+          error: (e, _) => ErrorRetryView(
+            error: e,
+            onRetry: () => ref.invalidate(myMatchesProvider),
           ),
           data: (matches) {
             if (matches.isEmpty) return const _EmptyState();

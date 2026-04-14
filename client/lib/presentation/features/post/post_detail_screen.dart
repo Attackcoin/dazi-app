@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/glass_theme.dart';
 import '../../../core/widgets/avatar_stack.dart';
+import '../../../core/widgets/error_retry_view.dart';
 import '../../../core/widgets/glass_button.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/glow_background.dart';
@@ -38,26 +39,11 @@ class PostDetailScreen extends ConsumerWidget {
         body: Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) {
-        final gt = GlassTheme.of(context);
         return Scaffold(
           appBar: AppBar(),
-          body: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.error_outline, size: 48, color: gt.colors.textTertiary),
-                  const SizedBox(height: 12),
-                  Text('加载失败：$e', textAlign: TextAlign.center),
-                  const SizedBox(height: 20),
-                  FilledButton.tonal(
-                    onPressed: () => ref.invalidate(postByIdProvider(postId)),
-                    child: const Text('重试'),
-                  ),
-                ],
-              ),
-            ),
+          body: ErrorRetryView(
+            error: e,
+            onRetry: () => ref.invalidate(postByIdProvider(postId)),
           ),
         );
       },
