@@ -9,6 +9,7 @@
 
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const { Timestamp } = require('firebase-admin/firestore');
 
 const db = admin.firestore();
 const messaging = admin.messaging();
@@ -122,13 +123,15 @@ exports.sendPreMeetingReminder = functions
 
     const matches = await db.collection('matches')
       .where('status', '==', 'confirmed')
-      .where('meetTime', '>=', admin.firestore.Timestamp.fromDate(twoHoursLater))
-      .where('meetTime', '<=', admin.firestore.Timestamp.fromDate(twoAndHalfHoursLater))
+      .where('meetTime', '>=', Timestamp.fromDate(twoHoursLater))
+      .where('meetTime', '<=', Timestamp.fromDate(twoAndHalfHoursLater))
       .get();
 
     for (const doc of matches.docs) {
       const match = doc.data();
       const postDoc = await db.collection('posts').doc(match.postId).get();
+      // post 可能已被删除，跳过此 match 避免 crash
+      if (!postDoc.exists) continue;
       const post = postDoc.data();
 
       await Promise.all(

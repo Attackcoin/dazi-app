@@ -12,6 +12,7 @@
 
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const { FieldValue } = require('firebase-admin/firestore');
 const crypto = require('crypto');
 
 const db = admin.firestore();
@@ -67,70 +68,86 @@ exports.freezeDeposit = functions
     }
     const uid = context.auth.uid;
 
-    const matchDoc = await db.collection('matches').doc(matchId).get();
-    if (!matchDoc.exists) throw new functions.https.HttpsError('not-found', '搭子不存在');
+    // H-7: 确定性 depositId + 状态 CAS 幂等。
+    // 原 `.add()` 每次生成随机 id，用户点两次支付按钮会创建两条 deposit 记录，
+    // 回调时 where orderId 查询也可能命中错条。改为 `${matchId}_${uid}` 复合 id。
+    const depositId = `${matchId}_${uid}`;
+    const depositRef = db.collection('deposits').doc(depositId);
 
-    const match = matchDoc.data();
-    if (!match.participants.includes(uid)) {
-      throw new functions.https.HttpsError('permission-denied', '你不是该搭子的参与者');
-    }
+    return await db.runTransaction(async (tx) => {
+      const matchDoc = await tx.get(db.collection('matches').doc(matchId));
+      if (!matchDoc.exists) throw new functions.https.HttpsError('not-found', '搭子不存在');
+      const match = matchDoc.data();
+      if (!match.participants.includes(uid)) {
+        throw new functions.https.HttpsError('permission-denied', '你不是该搭子的参与者');
+      }
 
-    const postDoc = await db.collection('posts').doc(match.postId).get();
-    const post = postDoc.data();
+      const postDoc = await tx.get(db.collection('posts').doc(match.postId));
+      const post = postDoc.data();
+      if (!post.depositAmount || post.depositAmount === 0) {
+        return { success: true, message: '该搭子无需押金' };
+      }
 
-    if (!post.depositAmount || post.depositAmount === 0) {
-      return { success: true, message: '该搭子无需押金' };
-    }
+      // 检查现有 deposit 状态，实现幂等
+      const existingDeposit = await tx.get(depositRef);
+      if (existingDeposit.exists) {
+        const cur = existingDeposit.data();
+        if (cur.status === 'frozen' || cur.status === 'sesame_guaranteed') {
+          return { success: true, alreadyFrozen: true, method: cur.payChannel };
+        }
+        if (cur.status === 'pending_payment') {
+          // 幂等：复用原 orderId，允许客户端重试支付
+          return {
+            success: true,
+            orderId: cur.orderId,
+            amount: cur.amount,
+            payChannel: cur.payChannel,
+            resumed: true,
+          };
+        }
+        // refunded / ghost_deducted：状态已终结，不允许重新冻结
+        throw new functions.https.HttpsError(
+          'failed-precondition',
+          `押金状态已终结 (${cur.status})，无法重新冻结`
+        );
+      }
 
-    // 检查芝麻信用是否可以免押金
-    const userDoc = await db.collection('users').doc(uid).get();
-    const user = userDoc.data();
-    // 注：AppUser 模型只有 sesameAuthorized (bool)，没有 sesameScore 字段。
-    // 原逻辑 `sesameAuthorized && sesameScore >= 750` 永为 false（sesameScore 恒 undefined）。
-    // D3 信用承诺 MVP 下本函数为 dead code，此处仅修复字段不一致 bug。
-    if (user.sesameAuthorized) {
-      // 芝麻信用担保，无需实际押金
-      await db.collection('deposits').add({
+      // 检查芝麻信用是否可以免押金
+      const userDoc = await tx.get(db.collection('users').doc(uid));
+      const user = userDoc.data();
+      // 注：AppUser 模型只有 sesameAuthorized (bool)，没有 sesameScore 字段。
+      if (user.sesameAuthorized) {
+        tx.set(depositRef, {
+          userId: uid,
+          matchId,
+          amount: post.depositAmount,
+          status: 'sesame_guaranteed',
+          payChannel: 'sesame',
+          createdAt: FieldValue.serverTimestamp(),
+        });
+        return { success: true, method: 'sesame', message: '芝麻信用担保，无需缴纳押金' };
+      }
+
+      // 创建支付订单（调用微信/支付宝担保交易）
+      const orderId = `dazi_${matchId}_${uid}_${Date.now()}`;
+      // TODO: 接入微信支付/支付宝担保交易 SDK
+      tx.set(depositRef, {
         userId: uid,
         matchId,
         amount: post.depositAmount,
-        status: 'sesame_guaranteed',
-        payChannel: 'sesame',
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        status: 'pending_payment',
+        payChannel,
+        orderId,
+        createdAt: FieldValue.serverTimestamp(),
       });
-      return { success: true, method: 'sesame', message: '芝麻信用担保，无需缴纳押金' };
-    }
 
-    // 创建支付订单（调用微信/支付宝担保交易）
-    const orderId = `dazi_${matchId}_${uid}_${Date.now()}`;
-
-    // TODO: 接入微信支付/支付宝担保交易 SDK
-    // const payResult = await WechatPay.createEscrowOrder({
-    //   orderId,
-    //   amount: post.depositAmount * 100, // 单位：分
-    //   description: `搭子押金-${post.title}`,
-    //   userId: uid,
-    // });
-
-    // 记录押金（待支付状态）
-    await db.collection('deposits').add({
-      userId: uid,
-      matchId,
-      amount: post.depositAmount,
-      status: 'pending_payment',
-      payChannel,
-      orderId,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      return {
+        success: true,
+        orderId,
+        amount: post.depositAmount,
+        payChannel,
+      };
     });
-
-    // 返回支付参数（前端唤起支付 SDK）
-    return {
-      success: true,
-      orderId,
-      amount: post.depositAmount,
-      payChannel,
-      // payParams: payResult.params, // 微信/支付宝支付参数
-    };
   });
 
 // ─────────────────────────────────────────────────────
@@ -157,12 +174,28 @@ exports.depositPaymentCallback = functions
         .limit(1)
         .get();
 
-      if (!depositQuery.empty) {
-        await depositQuery.docs[0].ref.update({
-          status: 'frozen',
-          frozenAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
+      if (depositQuery.empty) {
+        res.status(200).send('OK (unknown order)');
+        return;
       }
+
+      // H-7: CAS —— 只有 pending_payment 才能转 frozen；已 frozen 幂等 no-op；
+      // 其他终结状态 (refunded/ghost_deducted) 告警但返回 200 防止支付平台无限重试
+      const depRef = depositQuery.docs[0].ref;
+      await db.runTransaction(async (tx) => {
+        const cur = await tx.get(depRef);
+        if (!cur.exists) return;
+        const st = cur.data().status;
+        if (st === 'frozen') return;
+        if (st !== 'pending_payment') {
+          console.warn(`callback 状态异常 orderId=${orderId} status=${st}，忽略`);
+          return;
+        }
+        tx.update(depRef, {
+          status: 'frozen',
+          frozenAt: FieldValue.serverTimestamp(),
+        });
+      });
     }
 
     res.status(200).send('OK');
@@ -210,7 +243,7 @@ exports.refundDeposit = functions
       status: 'refunded',
       refundAmount,
       refundRatio,
-      refundedAt: admin.firestore.FieldValue.serverTimestamp(),
+      refundedAt: FieldValue.serverTimestamp(),
     });
 
     return { success: true, refundAmount, refundRatio };

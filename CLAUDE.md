@@ -153,6 +153,12 @@ Team-lead 在阶段边界检查：
 - ~~**UI-BL-1** `post_card.dart:31:16` Column RenderFlex overflow 15px~~ — **已修复 2026-04-11**：根因在 `home_screen.dart` SliverGrid `mainAxisExtent: 290`（实际内容 ~306），改为 308，flow4.py 截图验证
 - ~~**UI-BL-2** `home_screen.dart:64` 城市切换 InkWell `onTap: () {}` 是空实现~~ — **已修复 2026-04-11**：加 `_showCityPicker` bottom sheet（10 城市 + 打勾选中态），点 tap → show sheet → 选 city → `userRepositoryProvider.updateProfile({'city': picked})` → Firestore merge → currentAppUserProvider 响应式 rebuild home feed。CI PASS
 
+### KP-6: firebase-admin `admin.firestore.FieldValue` 命名空间在 Functions emulator 里 undefined
+- **症状**：applyToPost 事务内抛 `TypeError: Cannot read properties of undefined (reading 'serverTimestamp')`，指向 `admin.firestore.FieldValue.serverTimestamp()`
+- **根因**：Node REPL 隔离测试里 `admin.firestore.FieldValue` 可正常访问；但 Functions emulator runtime 在 module load + 事务 callback 上下文里该静态命名空间变 undefined（可能与 `const db = admin.firestore();` 调用后 emulator proxy 有关）
+- **修复**：改用 firebase-admin v12 模块化导入 `const { FieldValue, Timestamp } = require('firebase-admin/firestore');`，然后 `FieldValue.serverTimestamp()` / `Timestamp.fromDate(...)`
+- **预防**：Functions 代码**禁**直接访问 `admin.firestore.FieldValue` / `admin.firestore.Timestamp`；2026-04-14 已在 applications/ai/deposits/notifications/antiGhosting 五个文件统一修复
+
 ### KP-5: dart-define flag 名拼写
 - **症状**：phone OTP 不到 emulator，浏览器弹 reCAPTCHA 图片挑战
 - **根因**：`main.dart:11` 用 `bool.fromEnvironment('USE_EMULATOR')`，但旧脚本/文档传 `--dart-define=USE_FIREBASE_EMULATOR=true` —— 名字不匹配，flag 永远 false，web SDK 走真 Firebase Auth

@@ -11,6 +11,7 @@
 
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const { FieldValue, Timestamp } = require('firebase-admin/firestore');
 const { _generateRecapCard } = require('./ai');
 const { _sendNotification } = require('./notifications');
 
@@ -24,7 +25,7 @@ exports.openCheckinWindow = functions
   .region('asia-southeast1')
   .pubsub.schedule('every 5 minutes')
   .onRun(async () => {
-    const now = admin.firestore.Timestamp.now();
+    const now = Timestamp.now();
     const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
 
     // 找出"已确认"且见面时间在过去30分钟内，但签到窗口未开启的搭子
@@ -32,7 +33,7 @@ exports.openCheckinWindow = functions
       .where('status', '==', 'confirmed')
       .where('checkinWindowOpen', '==', false)
       .where('meetTime', '<=', now)
-      .where('meetTime', '>=', admin.firestore.Timestamp.fromDate(thirtyMinAgo))
+      .where('meetTime', '>=', Timestamp.fromDate(thirtyMinAgo))
       .get();
 
     const batch = db.batch();
@@ -41,7 +42,7 @@ exports.openCheckinWindow = functions
     matches.forEach(doc => {
       batch.update(doc.ref, {
         checkinWindowOpen: true,
-        checkinWindowExpiresAt: admin.firestore.Timestamp.fromDate(
+        checkinWindowExpiresAt: Timestamp.fromDate(
           new Date(doc.data().meetTime.toDate().getTime() + 60 * 60 * 1000) // 1小时签到窗口
         ),
       });
@@ -72,30 +73,48 @@ exports.submitCheckin = functions
     const { matchId, lat, lng } = data;
     const uid = context.auth.uid;
 
-    const matchDoc = await db.collection('matches').doc(matchId).get();
-    if (!matchDoc.exists) throw new functions.https.HttpsError('not-found', '搭子不存在');
+    // H-4 + M-1: 签到逻辑全部收进 runTransaction，CAS 保证"最后一人签到→completed"
+    // 只触发一次；GPS 在 post.location.lat/lng 存在时强制客户端上报坐标（防绕过）。
+    let allCheckedIn = false;
+    let committedMatch = null;
 
-    const match = matchDoc.data();
+    await db.runTransaction(async (tx) => {
+      const matchRef = db.collection('matches').doc(matchId);
+      const matchDoc = await tx.get(matchRef);
+      if (!matchDoc.exists) throw new functions.https.HttpsError('not-found', '搭子不存在');
+      const match = matchDoc.data();
 
-    if (!match.participants.includes(uid)) {
-      throw new functions.https.HttpsError('permission-denied', '你不是该搭子的参与者');
-    }
-    if (!match.checkinWindowOpen) {
-      throw new functions.https.HttpsError('failed-precondition', '签到窗口未开启');
-    }
-    if (match.checkedIn && match.checkedIn.includes(uid)) {
-      throw new functions.https.HttpsError('already-exists', '你已经签到过了');
-    }
+      if (!match.participants.includes(uid)) {
+        throw new functions.https.HttpsError('permission-denied', '你不是该搭子的参与者');
+      }
+      if (match.status !== 'confirmed') {
+        throw new functions.https.HttpsError('failed-precondition', '搭子状态不允许签到');
+      }
+      if (!match.checkinWindowOpen) {
+        throw new functions.https.HttpsError('failed-precondition', '签到窗口未开启');
+      }
+      if ((match.checkedIn || []).includes(uid)) {
+        throw new functions.https.HttpsError('already-exists', '你已经签到过了');
+      }
 
-    // GPS 验证（误差 < 500m 视为有效）
-    // 仅当客户端传入坐标 AND 帖子本身保存了坐标时才做距离验证，
-    // 否则退化为"信任签到"（见 create_post_screen TODO：Maps picker 未接入前无坐标）。
-    if (lat && lng) {
-      const postDoc = await db.collection('posts').doc(match.postId).get();
+      // 读 post 拿到坐标（在事务内一并读取保持一致性快照）
+      const postRef = db.collection('posts').doc(match.postId);
+      const postDoc = await tx.get(postRef);
+      if (!postDoc.exists) {
+        throw new functions.https.HttpsError('not-found', '帖子不存在');
+      }
       const post = postDoc.data();
       const postLat = post.location && post.location.lat;
       const postLng = post.location && post.location.lng;
+
+      // M-1: 帖子保存了坐标则客户端必须上报 lat/lng，不接受"不传坐标绕过"
       if (typeof postLat === 'number' && typeof postLng === 'number') {
+        if (typeof lat !== 'number' || typeof lng !== 'number') {
+          throw new functions.https.HttpsError(
+            'invalid-argument',
+            '该活动要求定位签到，请开启位置权限后重试'
+          );
+        }
         const distance = _calcDistance(lat, lng, postLat, postLng);
         if (distance > 500) {
           throw new functions.https.HttpsError(
@@ -104,19 +123,45 @@ exports.submitCheckin = functions
           );
         }
       }
-    }
 
-    // 记录签到
-    await matchDoc.ref.update({
-      checkedIn: admin.firestore.FieldValue.arrayUnion(uid),
+      // 在事务内判断签到完成后是否全员到齐，CAS 转 completed + increment totalMeetups
+      const newCheckedIn = [...(match.checkedIn || []), uid];
+      const allDone = match.participants.every((p) => newCheckedIn.includes(p));
+
+      if (allDone) {
+        tx.update(matchRef, {
+          checkedIn: newCheckedIn,
+          status: 'completed',
+          checkinWindowOpen: false,
+          completedAt: FieldValue.serverTimestamp(),
+        });
+        tx.update(postRef, { status: 'done' });
+        for (const p of match.participants) {
+          tx.update(db.collection('users').doc(p), {
+            totalMeetups: FieldValue.increment(1),
+          });
+        }
+        allCheckedIn = true;
+        committedMatch = { ...match, checkedIn: newCheckedIn, status: 'completed' };
+      } else {
+        tx.update(matchRef, { checkedIn: newCheckedIn });
+      }
     });
 
-    // 检查是否所有人都签到了
-    const updatedMatch = (await matchDoc.ref.get()).data();
-    const allCheckedIn = match.participants.every(p => updatedMatch.checkedIn.includes(p));
-
-    if (allCheckedIn) {
-      await _onAllCheckedIn(matchId, updatedMatch);
+    // 事务外做非核心副作用（推送、押金释放、回忆卡、勋章）——不影响一致性
+    if (allCheckedIn && committedMatch) {
+      try {
+        await _releaseDeposits(matchId);
+      } catch (err) {
+        console.error(`押金释放失败 matchId=${matchId}:`, err);
+      }
+      _generateRecapCard(matchId).catch((err) =>
+        console.error(`回忆卡生成失败 matchId=${matchId}:`, err)
+      );
+      await Promise.all(
+        committedMatch.participants.map((p) => _sendReviewReadyNotification(p, matchId))
+      );
+      await Promise.all(committedMatch.participants.map((p) => _checkAndAwardBadges(p)));
     }
 
     return { success: true, allCheckedIn };
@@ -129,7 +174,7 @@ exports.onCheckinTimeout = functions
   .region('asia-southeast1')
   .pubsub.schedule('every 5 minutes')
   .onRun(async () => {
-    const now = admin.firestore.Timestamp.now();
+    const now = Timestamp.now();
 
     const expiredMatches = await db.collection('matches')
       .where('status', '==', 'confirmed')
@@ -156,17 +201,16 @@ exports.onCheckinTimeout = functions
         checkinWindowOpen: false,
         ghostedUsers: ghosted,
         attendedUsers: attended,
-        resolvedAt: admin.firestore.FieldValue.serverTimestamp(),
+        resolvedAt: FieldValue.serverTimestamp(),
       });
 
-      // 爽约用户 ghostCount +1，触发限制检查
+      // H-5: 爽约计数用 FieldValue.increment（原 read-modify-write 在并发下会丢失更新）。
+      // isRestricted 改为在 applyToPost 入口实时判定 `ghostCount >= 3`，避免为了算出
+      // newCount 又引入新触发器。isRestricted 字段仍保留作为手动封禁标记。
       for (const uid of ghosted) {
         const userRef = db.collection('users').doc(uid);
-        const userDoc = await userRef.get();
-        const newCount = (userDoc.data().ghostCount || 0) + 1;
         batch.update(userRef, {
-          ghostCount: newCount,
-          isRestricted: newCount >= 3,
+          ghostCount: FieldValue.increment(1),
         });
       }
 
@@ -186,48 +230,6 @@ exports.onCheckinTimeout = functions
 
     console.log(`签到超时处理：${expiredMatches.size} 个搭子`);
   });
-
-// ─────────────────────────────────────────────────────
-// 内部：所有人签到成功后的处理
-// ─────────────────────────────────────────────────────
-async function _onAllCheckedIn(matchId, match) {
-  const batch = db.batch();
-  const matchRef = db.collection('matches').doc(matchId);
-
-  batch.update(matchRef, {
-    status: 'completed',
-    checkinWindowOpen: false,
-    completedAt: admin.firestore.FieldValue.serverTimestamp(),
-  });
-
-  // 所有参与者 totalMeetups +1
-  for (const uid of match.participants) {
-    batch.update(db.collection('users').doc(uid), {
-      totalMeetups: admin.firestore.FieldValue.increment(1),
-    });
-  }
-
-  // 对应的 post 状态更新为 done
-  batch.update(db.collection('posts').doc(match.postId), { status: 'done' });
-
-  await batch.commit();
-
-  // 释放押金
-  await _releaseDeposits(matchId);
-
-  // 生成回忆卡（后台异步，不阻塞签到流程）
-  _generateRecapCard(matchId).catch(err =>
-    console.error(`回忆卡生成失败 matchId=${matchId}:`, err)
-  );
-
-  // 推送"可以评价了"通知
-  await Promise.all(
-    match.participants.map(uid => _sendReviewReadyNotification(uid, matchId))
-  );
-
-  // 检查并更新勋章
-  await Promise.all(match.participants.map(uid => _checkAndAwardBadges(uid)));
-}
 
 // ─────────────────────────────────────────────────────
 // 内部：勋章检查
@@ -259,7 +261,7 @@ async function _checkAndAwardBadges(uid) {
 
   if (newBadges.length > 0) {
     await db.collection('users').doc(uid).update({
-      badges: admin.firestore.FieldValue.arrayUnion(...newBadges),
+      badges: FieldValue.arrayUnion(...newBadges),
     });
   }
 }

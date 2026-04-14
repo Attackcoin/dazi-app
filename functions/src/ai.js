@@ -12,6 +12,7 @@
 
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const { FieldValue } = require('firebase-admin/firestore');
 const Anthropic = require('@anthropic-ai/sdk');
 
 const db = admin.firestore();
@@ -130,6 +131,10 @@ exports.generateIcebreakers = functions
     if (!matchDoc.exists) throw new functions.https.HttpsError('not-found', '搭子不存在');
 
     const match = matchDoc.data();
+    // H-6: 鉴权 — 仅参与者可生成该 match 的破冰话题（AI 输出含对方画像）
+    if (!Array.isArray(match.participants) || !match.participants.includes(context.auth.uid)) {
+      throw new functions.https.HttpsError('permission-denied', '你不是该搭子的参与者');
+    }
     const postDoc = await db.collection('posts').doc(match.postId).get();
     const post = postDoc.data();
 
@@ -190,6 +195,14 @@ exports.generateRecapCard = functions
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', '请先登录');
 
     const { matchId } = data;
+    // H-6: 鉴权 — 仅参与者可生成/查看回忆卡（AI 产出敏感）。内部 _generateRecapCard 不加
+    // 校验，它由 antiGhosting 可信路径触发。
+    const matchDoc = await db.collection('matches').doc(matchId).get();
+    if (!matchDoc.exists) throw new functions.https.HttpsError('not-found', '搭子不存在');
+    const match = matchDoc.data();
+    if (!Array.isArray(match.participants) || !match.participants.includes(context.auth.uid)) {
+      throw new functions.https.HttpsError('permission-denied', '你不是该搭子的参与者');
+    }
     return await _generateRecapCard(matchId);
   });
 
@@ -230,7 +243,7 @@ async function _generateRecapCard(matchId) {
       location: post.location.name,
       participants: match.participants.length,
       duration: duration > 0 ? duration : null,
-      generatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      generatedAt: FieldValue.serverTimestamp(),
     }
   });
 
@@ -278,9 +291,15 @@ exports.generateMonthlyReports = functions
 
     const claude = getClaudeClient();
 
-    // 为每个活跃用户生成月报（批量处理，避免超时）
+    // M-5: 月份 label 修复——用 monthStart 而不是 now.getMonth()（now 是本月1日，getMonth() 会得到本月而非上月）
+    // 上月 = monthStart.getMonth()+1（0-index → 1-index）
+    const monthLabel = `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}`;
+
+    // M-5: 分批 Promise.all 并发生成，避免 for-await 串行超时
+    const BATCH = 10;
     const userIds = Object.keys(userStats);
-    for (const uid of userIds) {
+
+    async function generateOne(uid) {
       const stats = userStats[uid];
       try {
         const message = await claude.messages.create({
@@ -294,16 +313,21 @@ exports.generateMonthlyReports = functions
 
         await db.collection('monthlyReports').add({
           userId: uid,
-          month: `${now.getFullYear()}-${String(now.getMonth()).padStart(2, '0')}`,
+          month: monthLabel,
           meetups: stats.meetups,
           newFriends: stats.uniquePeople.size,
           summary: message.content[0].text.trim(),
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          createdAt: FieldValue.serverTimestamp(),
         });
       } catch (err) {
         console.error(`月报生成失败 uid=${uid}:`, err);
       }
     }
 
-    console.log(`月报生成完成，共 ${userIds.length} 位用户`);
+    for (let i = 0; i < userIds.length; i += BATCH) {
+      const batch = userIds.slice(i, i + BATCH);
+      await Promise.all(batch.map(generateOne));
+    }
+
+    console.log(`月报生成完成，共 ${userIds.length} 位用户 month=${monthLabel}`);
   });

@@ -5,6 +5,7 @@
 
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const { FieldValue, Timestamp } = require('firebase-admin/firestore');
 
 const db = admin.firestore();
 
@@ -31,20 +32,22 @@ exports.applyToPost = functions
       if (post.userId === uid) throw new functions.https.HttpsError('invalid-argument', '不能申请自己发布的搭子');
       if (post.status !== 'open') throw new functions.https.HttpsError('failed-precondition', '该搭子已满员或已结束');
 
-      // 检查用户是否已申请过
-      const existingApp = await db.collection('applications')
-        .where('postId', '==', postId)
-        .where('applicantId', '==', uid)
-        .where('status', 'in', ['pending', 'accepted'])
-        .limit(1)
-        .get();
+      // H-1: 确定性 docId = `${postId}_${uid}`，防止并发两次 applyToPost 调用
+      // 都看到"existingApp empty"然后各自创建申请。事务内 tx.get 即可保证原子。
+      const appRef = db.collection('applications').doc(`${postId}_${uid}`);
+      const existingAppDoc = await tx.get(appRef);
+      if (existingAppDoc.exists
+          && ['pending', 'accepted', 'waitlisted'].includes(existingAppDoc.data().status)) {
+        throw new functions.https.HttpsError('already-exists', '你已经申请过这个搭子了');
+      }
 
-      if (!existingApp.empty) throw new functions.https.HttpsError('already-exists', '你已经申请过这个搭子了');
-
-      // 检查用户是否被限制（爽约3次）
+      // 检查用户是否被限制（爽约3次或手动封禁）
+      // H-5 配套：isRestricted 字段不再由 antiGhosting 实时维护，改为此处判定 ghostCount 阈值
       const userDoc = await tx.get(db.collection('users').doc(uid));
       const user = userDoc.data();
-      if (user.isRestricted) throw new functions.https.HttpsError('permission-denied', '你的账号因爽约次数过多已被限制');
+      if (user.isRestricted || (user.ghostCount || 0) >= 3) {
+        throw new functions.https.HttpsError('permission-denied', '你的账号因爽约次数过多已被限制');
+      }
 
       // 统计当前已接受的人数
       const acceptedCount = Object.values(post.acceptedGender || {}).reduce((a, b) => a + b, 0);
@@ -56,7 +59,7 @@ exports.applyToPost = functions
       if (totalAccepted >= post.totalSlots - 1) {
         // 已满，进候补
         tx.update(postRef, {
-          waitlist: admin.firestore.FieldValue.arrayUnion(uid),
+          waitlist: FieldValue.arrayUnion(uid),
         });
         status = 'waitlisted';
       } else if (post.genderQuota) {
@@ -69,20 +72,19 @@ exports.applyToPost = functions
         if (quotaForGender > 0 && acceptedForGender >= quotaForGender) {
           // 该性别已满，进候补
           tx.update(postRef, {
-            waitlist: admin.firestore.FieldValue.arrayUnion(uid),
+            waitlist: FieldValue.arrayUnion(uid),
           });
           status = 'waitlisted';
         }
       }
 
-      // 创建申请记录
-      const appRef = db.collection('applications').doc();
+      // 创建申请记录（使用上面确定性 docId，H-1 防并发重复申请）
       tx.set(appRef, {
         postId,
         applicantId: uid,
         status,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        expiresAt: admin.firestore.Timestamp.fromDate(
+        createdAt: FieldValue.serverTimestamp(),
+        expiresAt: Timestamp.fromDate(
           new Date(Date.now() + 24 * 60 * 60 * 1000)
         ),
       });
@@ -100,6 +102,23 @@ exports.acceptApplication = functions
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', '请先登录');
 
     const { applicationId } = data;
+
+    // M-9: 事务外 pre-fetch 其它 pending 申请（事务内不能做 where query）。
+    // 这会有窗口：pre-fetch 与事务之间新到的申请仍会遗留 pending，
+    // 由 24h expireApplications 定时器兜底。
+    const appRefEarly = db.collection('applications').doc(applicationId);
+    const appDocEarly = await appRefEarly.get();
+    if (!appDocEarly.exists) {
+      throw new functions.https.HttpsError('not-found', '申请不存在');
+    }
+    const earlyPostId = appDocEarly.data().postId;
+    const otherPendingSnap = await db.collection('applications')
+      .where('postId', '==', earlyPostId)
+      .where('status', '==', 'pending')
+      .get();
+    const otherPendingRefs = otherPendingSnap.docs
+      .filter((d) => d.id !== applicationId)
+      .map((d) => d.ref);
 
     return await db.runTransaction(async (tx) => {
       const appRef = db.collection('applications').doc(applicationId);
@@ -131,13 +150,17 @@ exports.acceptApplication = functions
 
       // 更新 post 的已接受性别计数
       tx.update(postRef, {
-        [`acceptedGender.${genderKey}`]: admin.firestore.FieldValue.increment(1),
+        [`acceptedGender.${genderKey}`]: FieldValue.increment(1),
       });
 
       // 检查是否满员，更新 post 状态
       const newTotal = Object.values(post.acceptedGender || {}).reduce((a, b) => a + b, 0) + 1;
       if (newTotal >= post.totalSlots - 1) {
         tx.update(postRef, { status: 'full' });
+        // M-9: 满员后批量自动拒绝其它 pending 申请
+        for (const ref of otherPendingRefs) {
+          tx.update(ref, { status: 'auto_rejected' });
+        }
       }
 
       // 创建 match 记录（触发聊天室开启）
@@ -166,9 +189,9 @@ exports.acceptApplication = functions
         depositStatus: post.depositAmount > 0 ? 'pending' : 'none',
         status: 'confirmed',
         meetTime: post.time,
-        lastMessageAt: admin.firestore.FieldValue.serverTimestamp(),
+        lastMessageAt: FieldValue.serverTimestamp(),
         lastMessagePreview: '',
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
       });
 
       return { success: true, matchId: matchRef.id };
@@ -243,7 +266,7 @@ exports.expireApplications = functions
   .region('asia-southeast1')
   .pubsub.schedule('every 60 minutes')
   .onRun(async () => {
-    const now = admin.firestore.Timestamp.now();
+    const now = Timestamp.now();
 
     const expiredApps = await db.collection('applications')
       .where('status', '==', 'pending')
@@ -279,6 +302,10 @@ exports.submitReview = functions
     if (!match.participants.includes(fromUid)) {
       throw new functions.https.HttpsError('permission-denied', '你不是该搭子的参与者');
     }
+    // H-2: toUserId 必须是同 match 的其他参与者（防止污染任意用户评分）
+    if (!match.participants.includes(toUserId) || toUserId === fromUid) {
+      throw new functions.https.HttpsError('permission-denied', 'toUserId 必须为该搭子的其他参与者');
+    }
     if (match.status !== 'completed') {
       throw new functions.https.HttpsError('failed-precondition', '搭子尚未完成');
     }
@@ -286,26 +313,29 @@ exports.submitReview = functions
     // 防止重复评价：使用复合文档 ID（与 Firestore rules 层保持一致）
     const reviewDocId = `${matchId}_${fromUid}_${toUserId}`;
     const reviewRef = db.collection('reviews').doc(reviewDocId);
-    const existingReview = await reviewRef.get();
 
-    if (existingReview.exists) throw new functions.https.HttpsError('already-exists', '你已经评价过了');
-
-    // 写入评价（使用复合 ID，天然防止重复写入）
-    await reviewRef.set({
-      matchId,
-      fromUser: fromUid,
-      toUser: toUserId,
-      rating,
-      comment: comment || '',
-      tags: tags || [],
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-
-    // 原子增量更新被评价者的 ratingSum + ratingCount，避免全量查询和 race condition
-    // 前端展示 rating = ratingSum / ratingCount（均值），reviewCount 即 ratingCount
-    await db.collection('users').doc(toUserId).update({
-      ratingSum: admin.firestore.FieldValue.increment(rating),
-      ratingCount: admin.firestore.FieldValue.increment(1),
+    // H-3: 评价写入 + 被评价者 ratingSum/ratingCount 更新必须在同一事务内原子提交，
+    // 防止"写入 review 成功但 rating 聚合失败"的部分成功导致的脏数据
+    await db.runTransaction(async (tx) => {
+      const existingReview = await tx.get(reviewRef);
+      if (existingReview.exists) {
+        throw new functions.https.HttpsError('already-exists', '你已经评价过了');
+      }
+      tx.set(reviewRef, {
+        matchId,
+        fromUser: fromUid,
+        toUser: toUserId,
+        rating,
+        comment: comment || '',
+        tags: tags || [],
+        createdAt: FieldValue.serverTimestamp(),
+      });
+      // 原子增量：ratingSum += rating, ratingCount += 1
+      // 前端展示 rating = ratingSum / ratingCount（均值）
+      tx.update(db.collection('users').doc(toUserId), {
+        ratingSum: FieldValue.increment(rating),
+        ratingCount: FieldValue.increment(1),
+      });
     });
 
     return { success: true };

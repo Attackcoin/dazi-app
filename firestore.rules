@@ -7,6 +7,8 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if request.auth != null;
       // 新建账号：允许本人写入基础字段（注册时由前端写入）
+      // 信誉/风控字段（rating/ghostCount/isRestricted/...）必须为默认值，
+      // 防止用户注册时自行给自己刷高评分或解除限制
       allow create: if request.auth.uid == userId
         && request.resource.data.keys().hasOnly([
           'name', 'bio', 'avatar', 'city', 'gender', 'age', 'tags',
@@ -14,7 +16,15 @@ service cloud.firestore {
           'rating', 'reviewCount', 'ratingSum', 'ratingCount',
           'ghostCount', 'totalMeetups', 'badges', 'isRestricted',
           'createdAt', 'updatedAt'
-        ]);
+        ])
+        && request.resource.data.rating == 5.0
+        && request.resource.data.reviewCount == 0
+        && request.resource.data.ratingSum == 0
+        && request.resource.data.ratingCount == 0
+        && request.resource.data.ghostCount == 0
+        && request.resource.data.totalMeetups == 0
+        && request.resource.data.badges.size() == 0
+        && request.resource.data.isRestricted == false;
       // 更新：本人只能改可编辑字段；rating/ghostCount/isRestricted/badges 由 Cloud Functions 维护
       allow update: if request.auth.uid == userId
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
@@ -27,7 +37,8 @@ service cloud.firestore {
     // 登录用户可读，登录用户可创建（字段白名单），发布者才能修改/删除
     match /posts/{postId} {
       allow read: if request.auth != null;
-      // 创建：字段白名单，防止注入 status/rating 等服务端字段
+      // 创建：字段白名单，防止注入 rating 等服务端字段
+      // 初始 status 必须为 'open'，waitlist 必须为空——由 Cloud Functions 后续推进
       allow create: if request.auth != null
         && request.resource.data.keys().hasOnly([
           'userId', 'title', 'description', 'category', 'time',
@@ -36,15 +47,21 @@ service cloud.firestore {
           'isSocialAnxietyFriendly', 'status',
           'acceptedGender', 'waitlist', 'createdAt', 'updatedAt'
         ])
-        && request.resource.data.userId == request.auth.uid;
-      // 更新：发布者只能改业务可编辑字段
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'open'
+        && request.resource.data.waitlist.size() == 0;
+      // 更新：发布者只能改业务可编辑字段 + 取消帖子（status=cancelled）
+      // acceptedGender/waitlist 由 Cloud Functions 维护（申请/接受时更新），
+      // status 只允许客户端改成 'cancelled'（发布者主动取消），其他转移由 Functions 负责
       allow update: if request.auth.uid == resource.data.userId
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'title', 'description', 'category', 'time', 'location',
           'totalSlots', 'gender', 'genderQuota', 'costType',
           'depositAmount', 'images', 'tags', 'isSocialAnxietyFriendly',
-          'status', 'acceptedGender', 'waitlist', 'updatedAt'
-        ]);
+          'status', 'updatedAt'
+        ])
+        && (!('status' in request.resource.data.diff(resource.data).affectedKeys())
+            || request.resource.data.status == 'cancelled');
       allow delete: if request.auth.uid == resource.data.userId;
     }
 
@@ -55,7 +72,11 @@ service cloud.firestore {
         request.auth.uid == resource.data.applicantId ||
         request.auth.uid == get(/databases/$(database)/documents/posts/$(resource.data.postId)).data.userId
       );
-      allow create: if request.auth != null;
+      // M-3: 创建时要求 applicantId 必须是自己且初始 status='pending'，
+      // 防止冒用他人身份创建申请或伪造状态绕过 acceptApplication 流程
+      allow create: if request.auth != null
+        && request.resource.data.applicantId == request.auth.uid
+        && request.resource.data.status == 'pending';
       allow update: if request.auth.uid == get(
         /databases/$(database)/documents/posts/$(resource.data.postId)
       ).data.userId;
