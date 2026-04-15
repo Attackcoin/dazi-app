@@ -10,6 +10,7 @@
 //   "确认申请" → polling 等 Cloud Function `applyToPost` 写入 applications。
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dazi_app/core/widgets/glass_button.dart';
 import 'package:dazi_app/main.dart' as app;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -38,25 +39,27 @@ void main() {
     // ──────────────────────────────────────────────
     final alice = await signInAndSeed(kTestUserAlice);
 
+    // 字段严格按 firestore.rules posts create 白名单 L42-49
+    // （minSlots/isInstant 不在白名单，必须移除；tags/updatedAt 保留）
     final postRef = await FirebaseFirestore.instance.collection('posts').add({
       'userId': alice.uid,
       'category': '吃喝',
       'title': kTitle,
       'description': '静安寺附近新开的咖啡馆',
       'images': <String>[],
+      'tags': <String>[],
       'time': Timestamp.fromDate(DateTime.now().add(const Duration(days: 2))),
       'location': {'name': '静安寺', 'city': '上海'},
       'totalSlots': 4,
-      'minSlots': 2,
       // 注意：acceptedGender 存在 & 和 < totalSlots-1 → 走 pending 分支而不是候补
       'acceptedGender': {'male': 0, 'female': 0},
       'costType': 'aa',
       'depositAmount': 0,
-      'isInstant': false,
       'isSocialAnxietyFriendly': false,
       'waitlist': <String>[],
       'status': 'open',
       'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
     });
     final postId = postRef.id;
 
@@ -72,14 +75,21 @@ void main() {
     await tester.pumpAndSettle(const Duration(seconds: 5));
 
     // ──────────────────────────────────────────────
-    // 3. 首页 feed 应出现 Alice 的帖子（Bob 和 Alice 同城：上海）
-    // Feed 按 createdAt 倒序 + status=='open' + city=='上海'；新帖应排第一
-    // 滚动前的可见区域可能容不下，用 scrollUntilVisible 找卡片
+    // 3. 默认 tab 是"滑一滑"(swipe)；J3 测 PostCard 列表，切到"发现"tab
+    //    （Glass Morph 改版后，post list 在 /discover 而非 / — home_shell L87-93）
     // ──────────────────────────────────────────────
+    final discoverTab =
+        find.widgetWithText(InkWell, '发现').hitTestable();
+    if (discoverTab.evaluate().isNotEmpty) {
+      await tester.tap(discoverTab.first);
+      await tester.pumpAndSettle(const Duration(seconds: 3));
+    }
+
+    // 4. 首页 feed 应出现 Alice 的帖子（Bob 和 Alice 同城：上海）
     final titleFinder = find.text(kTitle);
 
     // 轻量 polling：等 Firestore stream 把新 doc 推下来 + PostCard build
-    for (var i = 0; i < 10; i++) {
+    for (var i = 0; i < 30; i++) {
       await tester.pump(const Duration(milliseconds: 500));
       if (titleFinder.evaluate().isNotEmpty) break;
     }
@@ -95,8 +105,9 @@ void main() {
     // ──────────────────────────────────────────────
     // 5. 点"立即申请"（详情页 _ApplicantButtons，status=open 且未满）
     // ──────────────────────────────────────────────
+    // Glass Morph 改造后改为 GlassButton（post_detail_screen.dart:438）
     final applyBtnFinder =
-        find.widgetWithText(ElevatedButton, '立即申请');
+        find.widgetWithText(GlassButton, '立即申请');
     expect(applyBtnFinder, findsOneWidget,
         reason: '详情页应出现"立即申请"主按钮（post.status=open 且未满）');
     await tester.tap(applyBtnFinder);

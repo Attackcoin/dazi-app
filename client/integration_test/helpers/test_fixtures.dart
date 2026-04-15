@@ -103,7 +103,15 @@ Future<User> signInAndSeed(TestUser u) async {
 Future<void> _writeUserDocIfMissing(String uid, TestUser u) async {
   final ref = FirebaseFirestore.instance.doc('users/$uid');
   final snap = await ref.get();
-  if (snap.exists) return;
+  if (snap.exists) {
+    // 旧 seed 缺 birthYear（router redirect 用它判断 onboarding 完成）。
+    // 补一次 update 让旧账号也跳过 onboarding。
+    final data = snap.data();
+    if (data == null || data['birthYear'] == null) {
+      await ref.update({'birthYear': u.birthYear});
+    }
+    return;
+  }
 
   // 字段严格按 firestore.rules `users create` 白名单（L12-27）：
   // 仅允许 keys: name,bio,avatar,city,gender,age,tags,fcmToken,
@@ -121,6 +129,7 @@ Future<void> _writeUserDocIfMissing(String uid, TestUser u) async {
     'city': u.city,
     'gender': u.gender,
     'age': age,
+    'birthYear': u.birthYear,
     'tags': <String>[],
     'sesameAuthorized': false,
     'notificationSettings': <String, dynamic>{},

@@ -12,6 +12,7 @@
 //      `/emulator/v1/projects/{id}/verificationCodes` GET 来读当前生成的 code。
 //   3. flutter test integration_test/journey_login_test.dart --dart-define=USE_FIREBASE_EMULATOR=true
 
+import 'package:dazi_app/core/widgets/glass_button.dart';
 import 'package:dazi_app/firebase_options.dart';
 import 'package:dazi_app/main.dart' as app;
 import 'package:flutter/material.dart';
@@ -51,8 +52,8 @@ void main() {
     await tester.tap(find.byType(Checkbox));
     await tester.pump();
 
-    // 3. 点"获取验证码"
-    await tester.tap(find.widgetWithText(ElevatedButton, '获取验证码'));
+    // 3. 点"获取验证码"（Glass Morph 迁移后改为 GlassButton，见 SD-5）
+    await tester.tap(find.widgetWithText(GlassButton, '获取验证码'));
     await tester.pumpAndSettle(const Duration(seconds: 3));
 
     // 4. 从 Auth emulator REST 读取最新 verification code（emulator 不发真短信）
@@ -79,7 +80,7 @@ void main() {
     await tester.pump();
     // 输入满 6 位会自动 submit（phone_verify_screen.dart:94）；
     // 保险起见也点一下"验证并登录"按钮
-    final submit = find.widgetWithText(ElevatedButton, '验证并登录');
+    final submit = find.widgetWithText(GlassButton, '验证并登录');
     if (submit.evaluate().isNotEmpty) {
       await tester.tap(submit);
     }

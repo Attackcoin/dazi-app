@@ -45,8 +45,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   bool _aiLoading = false;
   bool _genderQuotaEnabled = false;
 
-  List<CategoryConfig> get _categories =>
-      ref.read(categoriesProvider).valueOrNull ?? const [];
+  List<CategoryConfig> _categories = const [];
 
   @override
   void initState() {
@@ -332,6 +331,9 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   Widget build(BuildContext context) {
     final gt = GlassTheme.of(context);
     final colors = gt.colors;
+    // 订阅 categoriesProvider —— 之前用 ref.read 导致 stream 未到达时永远为空，
+    // 且 UI 不会因为流后续 emit 而重建。
+    _categories = ref.watch(categoriesProvider).valueOrNull ?? const [];
 
     return Scaffold(
       backgroundColor: colors.base,

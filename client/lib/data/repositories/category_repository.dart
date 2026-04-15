@@ -31,7 +31,7 @@ final categoriesProvider = StreamProvider<List<CategoryConfig>>((ref) {
         .toList()
       ..sort((a, b) => a.sort.compareTo(b.sort));
     return list.isEmpty ? _defaults : list;
-  });
+  }).handleError((Object _) => _defaults);
 });
 
 /// 内置默认分类 —— 当 Firestore 文档不存在时使用。

@@ -11,7 +11,7 @@ service cloud.firestore {
       // 防止用户注册时自行给自己刷高评分或解除限制
       allow create: if request.auth.uid == userId
         && request.resource.data.keys().hasOnly([
-          'name', 'bio', 'avatar', 'city', 'gender', 'age', 'tags',
+          'name', 'bio', 'avatar', 'city', 'gender', 'age', 'birthYear', 'tags',
           'fcmToken', 'sesameAuthorized', 'notificationSettings',
           'rating', 'reviewCount', 'ratingSum', 'ratingCount',
           'ghostCount', 'totalMeetups', 'badges', 'isRestricted',
@@ -28,9 +28,15 @@ service cloud.firestore {
       // 更新：本人只能改可编辑字段；rating/ghostCount/isRestricted/badges 由 Cloud Functions 维护
       allow update: if request.auth.uid == userId
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'name', 'bio', 'avatar', 'city', 'gender', 'age', 'tags',
+          'name', 'bio', 'avatar', 'city', 'gender', 'age', 'birthYear', 'tags',
           'fcmToken', 'sesameAuthorized', 'notificationSettings'
         ]);
+    }
+
+    // ── config（公开只读，写入由部署脚本/控制台执行）──────
+    match /config/{docId} {
+      allow read: if true;
+      allow write: if false;
     }
 
     // ── posts ─────────────────────────────────────────────
@@ -42,10 +48,10 @@ service cloud.firestore {
       allow create: if request.auth != null
         && request.resource.data.keys().hasOnly([
           'userId', 'title', 'description', 'category', 'time',
-          'location', 'totalSlots', 'gender', 'genderQuota',
+          'location', 'totalSlots', 'minSlots', 'gender', 'genderQuota',
           'costType', 'depositAmount', 'images', 'tags',
-          'isSocialAnxietyFriendly', 'status',
-          'acceptedGender', 'waitlist', 'createdAt', 'updatedAt'
+          'isSocialAnxietyFriendly', 'isInstant', 'status',
+          'acceptedGender', 'waitlist', 'createdAt', 'updatedAt', 'expiresAt'
         ])
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.status == 'open'

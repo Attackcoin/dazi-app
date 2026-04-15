@@ -159,6 +159,20 @@ Team-lead 在阶段边界检查：
 - **修复**：改用 firebase-admin v12 模块化导入 `const { FieldValue, Timestamp } = require('firebase-admin/firestore');`，然后 `FieldValue.serverTimestamp()` / `Timestamp.fromDate(...)`
 - **预防**：Functions 代码**禁**直接访问 `admin.firestore.FieldValue` / `admin.firestore.Timestamp`；2026-04-14 已在 applications/ai/deposits/notifications/antiGhosting 五个文件统一修复
 
+### KP-7: firestore.rules 字段白名单与代码写入字段不一致（多处 prod bug）
+- **症状**：4 处真实 prod bug，发现于 J2/J3 E2E 联调（2026-04-15）：
+  1. `users` rules L12/L29 白名单仅 `age`，但 `app_router.dart:52` redirect 检查 `birthYear == null` 决定 onboarding 完成态 + `onboarding_screen.dart:89` 写 `birthYear` —— **任何用户都无法走完 onboarding**（rules 拒）
+  2. `posts` rules L42-49 白名单缺 `minSlots`/`isInstant`/`expiresAt`，但 `post_create_repository.dart:146/156/161` 都写这些字段 —— **发布帖子永远 permission-denied**
+  3. `config/categories` 集合无 rules entry，默认 deny → `categoriesProvider` Stream 报 permission-denied → 没有 fallback → **发帖页分类列表永远空**
+  4. `create_post_screen.dart:49` 用 `ref.read(categoriesProvider).valueOrNull`（不订阅）→ Stream 后续 emit 不会触发 rebuild → **即使授权了 categories 也不显示**
+- **修复**：
+  - rules 加 `birthYear`/`minSlots`/`isInstant`/`expiresAt` 到对应 hasOnly 白名单
+  - rules 加 `match /config/{docId} { allow read: if true; }`
+  - `categoriesProvider` 加 `.handleError((Object _) => _defaults)` 流式兜底
+  - `create_post_screen` 把 `ref.read` 改为 `ref.watch`
+- **预防**：[AUTOMATE] golden_rules.py 增加"代码写入 collection.set/update 的字段集合 vs firestore.rules hasOnly 白名单"对比检查。任何 mismatch 即 fail
+- **教训**：`hasOnly` 白名单很严格，多写一个字段就 deny 全部。代码改字段时**必须**同步 rules
+
 ### KP-5: dart-define flag 名拼写
 - **症状**：phone OTP 不到 emulator，浏览器弹 reCAPTCHA 图片挑战
 - **根因**：`main.dart:11` 用 `bool.fromEnvironment('USE_EMULATOR')`，但旧脚本/文档传 `--dart-define=USE_FIREBASE_EMULATOR=true` —— 名字不匹配，flag 永远 false，web SDK 走真 Firebase Auth

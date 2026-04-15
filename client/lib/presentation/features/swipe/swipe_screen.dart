@@ -40,24 +40,36 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen>
   Offset _dragOffset = Offset.zero;
   bool _joining = false;
 
-  late final AnimationController _flyController = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 280),
-  );
-  late final AnimationController _springController = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 400),
-  );
-  late final AnimationController _successController = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 900),
-  );
+  late final AnimationController _flyController;
+  late final AnimationController _springController;
+  late final AnimationController _successController;
 
   Animation<Offset>? _flyAnimation;
   Animation<Offset>? _springAnimation;
 
   // 跳过的 post id 集合（不持久化，刷新后重置）
   final Set<String> _skippedIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    // 必须在 initState 里立刻构造（而非 late final 懒加载）。
+    // 若懒加载，widget 在首次 pump 后立即被 deactivate（例如 tearDown 触发登出
+    // 重建路由树），dispose() 才第一次访问 controller → 此时 createTicker
+    // 调 getInheritedWidgetOfExactType 查已 deactivate 的 ancestor → 抛异常。
+    _flyController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 280),
+    );
+    _springController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _successController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+  }
 
   @override
   void dispose() {

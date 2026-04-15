@@ -8,6 +8,7 @@
 // 绕开 go_router pushReplacement 后的 widget tree 稳定性问题。
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dazi_app/core/widgets/glass_button.dart';
 import 'package:dazi_app/main.dart' as app;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -36,14 +37,23 @@ void main() {
     app.main();
     await tester.pumpAndSettle(const Duration(seconds: 5));
 
-    // 1. 首页（已登录 + Alice 有 city）→ 点 FAB "即刻出发"（图标 Icons.bolt）
-    final fab = find.byIcon(Icons.bolt);
+    // 1. 首页（已登录 + Alice 有 city）→ 点 FAB（Glass Morph 改造后用 Icons.add）
+    //    home_shell.dart:53
+    final fab = find.byIcon(Icons.add);
     expect(fab, findsOneWidget, reason: '首页应显示发布 FAB');
     await tester.tap(fab);
-    await tester.pumpAndSettle();
+    await tester.pumpAndSettle(const Duration(seconds: 3));
 
-    // 2. 发布搭子页：选分类 "吃喝"
-    await tester.tap(find.text('吃喝'));
+    // 2. 发布搭子页：选分类 "吃喝"（PillTag 显示 "🍜 吃喝"，用 textContaining）
+    //    categoriesProvider 是 Firestore stream，可能要等 1 帧才发出 defaults
+    final catFinder = find.textContaining('吃喝');
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 300));
+      if (catFinder.evaluate().isNotEmpty) break;
+    }
+    expect(catFinder, findsAtLeastNWidgets(1),
+        reason: '发布页应能看到 "吃喝" 分类 PillTag');
+    await tester.tap(catFinder.first);
     await tester.pump();
 
     // 3. 填标题 —— 发帖页只有 3 个 TextField（title / location / desc），
@@ -68,13 +78,20 @@ void main() {
     await tester.enterText(locationField, '静安寺星巴克臻选');
     await tester.pump();
 
-    // 6. 滚到底并点 "发布" 按钮（bottomNavigationBar 的 ElevatedButton）
-    final publishBtn = find.widgetWithText(ElevatedButton, '发布');
+    // 6. 滚到底并点 "发布" 按钮（Glass Morph：GlassButton, create_post_screen.dart:437）
+    final publishBtn = find.widgetWithText(GlassButton, '发布');
     await tester.ensureVisible(publishBtn);
     await tester.pumpAndSettle();
     await tester.tap(publishBtn);
     // 发布 → Firestore write → pushReplacement('/post/$id') → 详情页
     await tester.pumpAndSettle(const Duration(seconds: 8));
+
+    // 检查是否有 validate 失败的 snackbar（请填写/请选择/活动时间）
+    for (final hint in const ['请填写', '请选择', '活动时间', '发布失败']) {
+      if (find.textContaining(hint).evaluate().isNotEmpty) {
+        fail('publish 触发 snackbar 提示：包含 "$hint"');
+      }
+    }
 
     // 7. 断言 Firestore：emulator 的 posts 集合应有一条 title = kTitle 的记录
     final snap = await FirebaseFirestore.instance
