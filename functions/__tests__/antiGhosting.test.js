@@ -4,6 +4,7 @@
  */
 
 jest.mock('firebase-admin', () => require('./setup').adminMock);
+jest.mock('firebase-admin/firestore', () => require('./setup').firestoreModuleMock);
 jest.mock('firebase-functions', () => require('./setup').makeFunctionsMock());
 // ai 和 notifications 被 antiGhosting 间接引用，stub 掉
 jest.mock('../src/ai', () => ({

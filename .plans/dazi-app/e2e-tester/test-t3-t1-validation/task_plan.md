@@ -132,9 +132,9 @@ flutter drive --driver=test_driver/integration_test.dart \
 
 ## 6. 交付物
 
-- [ ] Phase A：J0-J4 全部 PASS（附 progress.md 时间戳）
-- [ ] Phase B：journey_accept_application_test.dart 写入 + PASS
-- [ ] Phase C：journey_checkin_test.dart 写入 + PASS
-- [ ] Phase D：journey_review_test.dart 写入 + PASS
-- [ ] findings.md 汇总每 journey 验证的 T1 修复 ID
+- [x] Phase A：J0-J4 全部 PASS（2026-04-15，commit 6f025eb）
+- [x] Phase B：journey_accept_application_test.dart 写入 + PASS（2026-04-16）
+- [x] Phase C：journey_checkin_test.dart 写入 + PASS（2026-04-16）
+- [x] Phase D：journey_review_test.dart 写入 + PASS（2026-04-16，修复 signOut 后读 users 的 permission-denied）
+- [x] findings.md 汇总每 journey 验证的 T1 修复 ID
 - [ ] Known Pitfalls 追加（如有新发现）

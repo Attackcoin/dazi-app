@@ -4,6 +4,7 @@
  */
 
 jest.mock('firebase-admin', () => require('./setup').adminMock);
+jest.mock('firebase-admin/firestore', () => require('./setup').firestoreModuleMock);
 jest.mock('firebase-functions', () =>
   require('./setup').makeFunctionsMock()
 );

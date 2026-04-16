@@ -395,6 +395,12 @@ function makeFunctionsMock() {
   };
 }
 
+// firebase-admin/firestore 模块化导入的 mock（KP-6: 生产代码改用 require('firebase-admin/firestore')）
+const firestoreModuleMock = {
+  FieldValue: firestoreFn.FieldValue,
+  Timestamp: firestoreFn.Timestamp,
+};
+
 module.exports = {
   adminMock,
   fakeDb: _fakeDb,
@@ -403,4 +409,5 @@ module.exports = {
   FakeFirestore,
   makeFunctionsMock,
   FakeHttpsError,
+  firestoreModuleMock,
 };
