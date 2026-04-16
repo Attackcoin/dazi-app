@@ -1,78 +1,35 @@
 {
   "project_info": {
-    "project_number": "768282971908",
-    "firebase_url": "https://dazi-dev-default-rtdb.asia-southeast1.firebasedatabase.app",
-    "project_id": "dazi-dev",
-    "storage_bucket": "dazi-dev.firebasestorage.app"
+    "project_number": "342997816903",
+    "firebase_url": "https://dazi-prod-9c9d6-default-rtdb.firebaseio.com",
+    "project_id": "dazi-prod-9c9d6",
+    "storage_bucket": "dazi-prod-9c9d6.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:768282971908:android:4ce4e2bb4ed21fae6dca51",
+        "mobilesdk_app_id": "1:342997816903:android:3474db2ec185937389c362",
         "android_client_info": {
           "package_name": "app.dazi.dazi_app"
         }
       },
       "oauth_client": [
         {
-          "client_id": "768282971908-6sdpf5rjh9mflfmnim73eemlg83t5ui6.apps.googleusercontent.com",
+          "client_id": "342997816903-4k20t3fis1h8bc1cu5j39pcilhorpeb4.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyB-PDiMcBarNdxtWzdejnOqdfWoej-POp0"
+          "current_key": "AIzaSyAUW1C-KZUMt96zc_jFcYucmJvrN-2pqq0"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "768282971908-6sdpf5rjh9mflfmnim73eemlg83t5ui6.apps.googleusercontent.com",
+              "client_id": "342997816903-4k20t3fis1h8bc1cu5j39pcilhorpeb4.apps.googleusercontent.com",
               "client_type": 3
-            },
-            {
-              "client_id": "768282971908-k9mv26j3qor01ugd2l8dk9rsrv9gitd2.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "app.dazi.daziApp"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:768282971908:android:69a7e5c565acbefa6dca51",
-        "android_client_info": {
-          "package_name": "com.dazi.app"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "768282971908-6sdpf5rjh9mflfmnim73eemlg83t5ui6.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyB-PDiMcBarNdxtWzdejnOqdfWoej-POp0"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "768282971908-6sdpf5rjh9mflfmnim73eemlg83t5ui6.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "768282971908-k9mv26j3qor01ugd2l8dk9rsrv9gitd2.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "app.dazi.daziApp"
-              }
             }
           ]
         }

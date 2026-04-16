@@ -18,6 +18,8 @@ node_modules/
 # Android 签名（绝不提交）
 client/android/key.properties
 client/android/keystore/
+client/keystore/
+*.jks
 
 # 系统文件
 .DS_Store

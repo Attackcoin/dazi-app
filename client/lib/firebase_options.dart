@@ -24,34 +24,34 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyB-PDiMcBarNdxtWzdejnOqdfWoej-POp0',
-    appId: '1:768282971908:android:4ce4e2bb4ed21fae6dca51',
-    messagingSenderId: '768282971908',
-    projectId: 'dazi-dev',
-    databaseURL: 'https://dazi-dev-default-rtdb.asia-southeast1.firebasedatabase.app',
-    storageBucket: 'dazi-dev.firebasestorage.app',
+    apiKey: 'AIzaSyAUW1C-KZUMt96zc_jFcYucmJvrN-2pqq0',
+    appId: '1:342997816903:android:3474db2ec185937389c362',
+    messagingSenderId: '342997816903',
+    projectId: 'dazi-prod-9c9d6',
+    databaseURL: 'https://dazi-prod-9c9d6-default-rtdb.firebaseio.com',
+    storageBucket: 'dazi-prod-9c9d6.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBy0ENmvseDJf7AabIvhFpXSRk1rOC9leQ',
-    appId: '1:768282971908:ios:b2cf603a86c7c0ee6dca51',
-    messagingSenderId: '768282971908',
-    projectId: 'dazi-dev',
-    databaseURL: 'https://dazi-dev-default-rtdb.asia-southeast1.firebasedatabase.app',
-    storageBucket: 'dazi-dev.firebasestorage.app',
-    iosClientId: '768282971908-k9mv26j3qor01ugd2l8dk9rsrv9gitd2.apps.googleusercontent.com',
+    apiKey: 'AIzaSyDlrq-B2q4KfQ3QRmJdpJLOO99O388nTDg',
+    appId: '1:342997816903:ios:42fdfd58e6575ecc89c362',
+    messagingSenderId: '342997816903',
+    projectId: 'dazi-prod-9c9d6',
+    databaseURL: 'https://dazi-prod-9c9d6-default-rtdb.firebaseio.com',
+    storageBucket: 'dazi-prod-9c9d6.firebasestorage.app',
+    iosClientId: '342997816903-dtbve2h5qi4gvqsuhrp6eft44sfsobca.apps.googleusercontent.com',
     iosBundleId: 'app.dazi.daziApp',
   );
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDd1TNNA9-l-lDFfL4fqQkHzJ6NJ2d_wGQ',
-    appId: '1:768282971908:web:2f027e1fe19b35aa6dca51',
-    messagingSenderId: '768282971908',
-    projectId: 'dazi-dev',
-    authDomain: 'dazi-dev.firebaseapp.com',
-    databaseURL: 'https://dazi-dev-default-rtdb.asia-southeast1.firebasedatabase.app',
-    storageBucket: 'dazi-dev.firebasestorage.app',
-    measurementId: 'G-TC2H1EJVHS',
+    apiKey: 'AIzaSyBpsm5A9joJw5GGIQTRcyhZaMpaIht_aMY',
+    appId: '1:342997816903:web:3e207c3afd658ef989c362',
+    messagingSenderId: '342997816903',
+    projectId: 'dazi-prod-9c9d6',
+    authDomain: 'dazi-prod-9c9d6.firebaseapp.com',
+    databaseURL: 'https://dazi-prod-9c9d6-default-rtdb.firebaseio.com',
+    storageBucket: 'dazi-prod-9c9d6.firebasestorage.app',
+    measurementId: 'G-SZN7TVCCWJ',
   );
 
 }
