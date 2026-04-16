@@ -1,6 +1,6 @@
 # dazi-app - 主计划
 
-> 状态: AUDIT-AND-OPTIMIZE
+> 状态: AUDIT-AND-OPTIMIZE (T0-T4 全部完成)
 > 创建: 2026-04-09
 > 更新: 2026-04-12 (Glass Morph UI 升级完成)
 > 团队: dazi-app (backend-dev, frontend-dev, researcher, e2e-tester, reviewer, custodian)
@@ -46,18 +46,19 @@ Flutter + Firebase 社交搭子 App（找人一起吃饭/运动/游戏等）。
 
 | # | 任务 | 负责人 | 状态 | 计划文件 |
 |---|------|--------|------|----------|
-| T0a | 全面代码库盘点 | researcher | pending | .plans/dazi-app/researcher/research-full-audit/ |
-| T0b | 现有代码深度审查 | reviewer | pending (blocked by T0a) | .plans/dazi-app/reviewer/review-full-audit/ |
-| T1 | 前端优化（按审查结论） | frontend-dev | pending (blocked by T0b) | .plans/dazi-app/frontend-dev/ |
-| T2 | 后端优化（按审查结论） | backend-dev | pending (blocked by T0b) | .plans/dazi-app/backend-dev/ |
-| T3 | E2E 测试关键流程 | e2e-tester | pending (blocked by T1, T2) | .plans/dazi-app/e2e-tester/ |
-| T4 | 合规巡检 + 清理 | custodian | pending (blocked by T3) | .plans/dazi-app/custodian/ |
+| T0a | 全面代码库盘点 | researcher | done | .plans/dazi-app/researcher/research-full-audit/ |
+| T0b | 现有代码深度审查 | reviewer | done | .plans/dazi-app/reviewer/review-full-audit/ |
+| T1 | 前端+后端优化（安全/质量修复） | frontend-dev, backend-dev | done | .plans/dazi-app/frontend-dev/, backend-dev/ |
+| T2 | 后端优化（安全修复+模块化导入） | backend-dev | done | .plans/dazi-app/backend-dev/ |
+| T3 | E2E 测试关键流程 | e2e-tester | done | .plans/dazi-app/e2e-tester/ |
+| T4 | 合规巡检 + 清理 | custodian | done | — |
 
 ---
 
 ## 5. 当前阶段
 
-阶段 0：researcher 全面扫描代码库，盘点现有功能、缺口、技术债务和优化机会。
+全部审查优化轮次（T0-T4）已完成。CI 全绿（Flutter 50/50 + Functions 31/31 + Golden Rules 0 WARN）。
+E2E 覆盖 8 个 journey（J0-J7），T1 修复的 6 个关键安全/事务项均有 E2E 闭环。
 
 ---
 

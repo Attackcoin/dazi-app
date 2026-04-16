@@ -295,7 +295,7 @@ def check_invariant_coverage(docs_dir, result):
 #   - 注释行
 COLOR_LITERAL_PATTERN = re.compile(r"Color\(\s*0x[0-9A-Fa-f]{6,8}\s*\)")
 # 允许在这些文件中硬编码——它们是颜色源头
-COLOR_SOURCE_FILES = {"app_colors.dart", "colors.dart", "theme.dart"}
+COLOR_SOURCE_FILES = {"app_colors.dart", "colors.dart", "theme.dart", "dazi_colors.dart"}
 
 
 def check_hardcoded_colors(src_dirs, result):

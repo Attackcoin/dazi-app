@@ -77,7 +77,7 @@ class _ProfileSkeleton extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFFFF8A65), Color(0xFFFF6B9D), Color(0xFFA855F7)],
+                colors: DaziColors.heroGradientColors,
               ),
             ),
           ),

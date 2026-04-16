@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/dazi_colors.dart';
 import '../../../core/theme/glass_theme.dart';
 import '../../../core/theme/spacing.dart';
 import '../../../core/widgets/glow_background.dart';
@@ -160,10 +161,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       width: 56,
                       height: 56,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
+                        gradient: LinearGradient(
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
-                          colors: [Color(0xFFFF8A65), Color(0xFFFF6B9D)],
+                          colors: DaziColors.heroGradientColors.sublist(0, 2),
                         ),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/dazi_colors.dart';
 import '../../../core/theme/glass_theme.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/animated_list_item.dart';
