@@ -51,7 +51,8 @@ service cloud.firestore {
           'location', 'totalSlots', 'minSlots', 'gender', 'genderQuota',
           'costType', 'depositAmount', 'images', 'tags',
           'isSocialAnxietyFriendly', 'isInstant', 'status',
-          'acceptedGender', 'waitlist', 'createdAt', 'updatedAt', 'expiresAt'
+          'acceptedGender', 'waitlist', 'createdAt', 'updatedAt', 'expiresAt',
+          'publisherName', 'publisherAvatar'
         ])
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.status == 'open'

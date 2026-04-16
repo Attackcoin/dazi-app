@@ -130,9 +130,15 @@ class PostCreateRepository {
     final user = _auth.currentUser;
     if (user == null) throw StateError('未登录');
 
+    // 读取当前用户信息，用于冗余写入发布者昵称和头像
+    final userDoc = await _firestore.collection('users').doc(user.uid).get();
+    final userData = userDoc.data() ?? {};
+
     final doc = _firestore.collection('posts').doc();
     await doc.set({
       'userId': user.uid,
+      'publisherName': userData['name'] as String? ?? '',
+      'publisherAvatar': userData['avatar'] as String? ?? '',
       'category': draft.category,
       'title': draft.title.trim(),
       'description': draft.description.trim(),

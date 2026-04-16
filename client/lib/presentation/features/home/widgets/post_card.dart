@@ -101,10 +101,8 @@ class _PostCardState extends State<PostCard> {
   }
 
   /// Publisher avatar + name row at top.
-  ///
-  /// TODO(data-model): Post model needs `publisherAvatarUrl` and
-  /// `publisherName` fields to display real data here.
   Widget _buildPublisherRow(GlassThemeData gt, Post post) {
+    final hasAvatar = post.publisherAvatar != null && post.publisherAvatar!.isNotEmpty;
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
       child: Row(
@@ -112,14 +110,17 @@ class _PostCardState extends State<PostCard> {
           CircleAvatar(
             radius: 12,
             backgroundColor: gt.colors.glassL2Bg,
-            // TODO(data-model): use post.publisherAvatarUrl when available
-            child: Icon(Icons.person, size: 14, color: gt.colors.textTertiary),
+            backgroundImage: hasAvatar
+                ? CachedNetworkImageProvider(post.publisherAvatar!)
+                : null,
+            child: hasAvatar
+                ? null
+                : Icon(Icons.person, size: 14, color: gt.colors.textTertiary),
           ),
           const SizedBox(width: Spacing.space8),
           Expanded(
             child: Text(
-              // TODO(data-model): use post.publisherName when available
-              '搭子用户',
+              post.publisherName ?? '搭子用户',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -201,13 +202,9 @@ class _PostCardState extends State<PostCard> {
   }
 
   /// Bottom row: AvatarStack (participants) + slots count.
-  ///
-  /// TODO(data-model): Post model needs `participantAvatarUrls` field for
-  /// real participant avatars. Currently shows empty AvatarStack shell.
   Widget _buildBottomRow(GlassThemeData gt, Post post) {
     return Row(
       children: [
-        // TODO(data-model): replace [] with post.participantAvatarUrls
         const AvatarStack(avatarUrls: [], size: 20),
         const Spacer(),
         _SlotsBar(post: post, gt: gt),

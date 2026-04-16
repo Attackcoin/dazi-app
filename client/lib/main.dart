@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'app.dart';
+import 'core/services/crashlytics_service.dart';
 import 'firebase_options.dart';
 
 const bool useFirebaseEmulator = bool.fromEnvironment('USE_EMULATOR');
@@ -19,6 +20,7 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  await initCrashlytics();
   if (useFirebaseEmulator) {
     final host = (!kIsWeb && defaultTargetPlatform == TargetPlatform.android)
         ? '10.0.2.2'

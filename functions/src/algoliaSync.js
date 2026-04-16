@@ -54,6 +54,7 @@ function toAlgoliaRecord(postId, data) {
     isInstant: !!data.isInstant,
     status: data.status || 'open',
     totalSlots: data.totalSlots || 0,
+    publisherName: data.publisherName || '',
     createdAt: data.createdAt && data.createdAt.toMillis ? data.createdAt.toMillis() : Date.now(),
   };
 }

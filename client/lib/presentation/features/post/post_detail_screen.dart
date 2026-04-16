@@ -212,8 +212,7 @@ class PostDetailScreen extends ConsumerWidget {
           ),
         ),
         const SizedBox(width: 12),
-        // TODO(data-model): Post model has no participantAvatarUrls field;
-        // replace [] with post.participantAvatarUrls when the field is added.
+        // participantAvatarUrls 从 match.participantInfo 获取，帖子详情页暂不展示
         const AvatarStack(avatarUrls: [], size: 28),
         const Spacer(),
         Text(

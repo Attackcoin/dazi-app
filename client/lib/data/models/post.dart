@@ -25,6 +25,8 @@ class Post {
   final DateTime? createdAt;
   final DateTime? expiresAt;
   final String? shareUrl;
+  final String? publisherName;
+  final String? publisherAvatar;
 
   const Post({
     required this.id,
@@ -48,6 +50,8 @@ class Post {
     required this.createdAt,
     required this.expiresAt,
     required this.shareUrl,
+    this.publisherName,
+    this.publisherAvatar,
   });
 
   int get acceptedCount => acceptedGender.male + acceptedGender.female;
@@ -87,6 +91,8 @@ class Post {
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
       expiresAt: (data['expiresAt'] as Timestamp?)?.toDate(),
       shareUrl: data['shareUrl'] as String?,
+      publisherName: data['publisherName'] as String?,
+      publisherAvatar: data['publisherAvatar'] as String?,
     );
   }
 
@@ -148,6 +154,8 @@ class Post {
           : DateTime.fromMillisecondsSinceEpoch(createdAtMs),
       expiresAt: null,
       shareUrl: null,
+      publisherName: hit['publisherName'] as String?,
+      publisherAvatar: null, // Algolia 不同步头像 URL
     );
   }
 }
