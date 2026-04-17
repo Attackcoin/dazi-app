@@ -2,14 +2,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/config/region_config.dart';
 import '../models/application.dart';
 import 'auth_repository.dart';
 
-/// Cloud Functions 部署区域 —— 与 functions/src/applications.js 保持一致。
-const _functionsRegion = 'asia-southeast1';
-
+/// Cloud Functions 区域 —— 根据用户 locale 自动选择最近节点（T5-13）。
 final firebaseFunctionsProvider = Provider<FirebaseFunctions>((ref) {
-  return FirebaseFunctions.instanceFor(region: _functionsRegion);
+  final region = RegionConfig.resolveFunctionsRegion();
+  return FirebaseFunctions.instanceFor(region: region);
 });
 
 final applicationRepositoryProvider = Provider<ApplicationRepository>((ref) {

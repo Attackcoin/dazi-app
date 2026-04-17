@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -47,6 +48,7 @@ class _ApplySheetState extends ConsumerState<ApplySheet> {
   @override
   Widget build(BuildContext context) {
     final colors = GlassTheme.of(context).colors;
+    final l10n = AppLocalizations.of(context)!;
     final post = widget.post;
     final isFull = post.isFull;
     return SafeArea(
@@ -73,7 +75,7 @@ class _ApplySheetState extends ConsumerState<ApplySheet> {
               ),
               const SizedBox(height: 20),
               Text(
-                isFull ? '加入候补名单' : '确认申请',
+                isFull ? l10n.apply_joinWaitlist : l10n.apply_confirmButton,
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -82,8 +84,8 @@ class _ApplySheetState extends ConsumerState<ApplySheet> {
               const SizedBox(height: 6),
               Text(
                 isFull
-                    ? '当前活动已满员，加入候补后若有空位会自动递补'
-                    : '发布者会在 24 小时内回复你的申请',
+                    ? l10n.apply_waitlistHint
+                    : l10n.apply_publisherReplyHint,
                 style: TextStyle(
                   fontSize: 13,
                   color: colors.textSecondary,
@@ -111,20 +113,20 @@ class _ApplySheetState extends ConsumerState<ApplySheet> {
                       context,
                       Icons.schedule,
                       post.time == null
-                          ? '时间待定'
-                          : DateFormat('M月d日 HH:mm').format(post.time!),
+                          ? l10n.common_timeTbd
+                          : DateFormat('M/d HH:mm').format(post.time!),
                     ),
                     const SizedBox(height: 4),
                     _sheetInfo(
                       context,
                       Icons.location_on_outlined,
-                      post.location?.name ?? '地点待定',
+                      post.location?.name ?? l10n.common_locationTbd,
                     ),
                     const SizedBox(height: 4),
                     _sheetInfo(
                       context,
                       Icons.group_outlined,
-                      '${post.acceptedCount}/${post.totalSlots} 人',
+                      l10n.chat_peopleCount(post.acceptedCount, post.totalSlots),
                     ),
                   ],
                 ),
@@ -143,7 +145,7 @@ class _ApplySheetState extends ConsumerState<ApplySheet> {
                             strokeWidth: 2,
                           ),
                         )
-                      : Text(isFull ? '加入候补' : '确认申请'),
+                      : Text(isFull ? l10n.postDetail_joinWaitlist : l10n.apply_confirmButton),
                 ),
               ),
             ],

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+import 'core/locale/locale_provider.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/glass_theme.dart';
@@ -44,9 +47,23 @@ class _DaziAppState extends ConsumerState<DaziApp> {
   bool _fcmInitialized = false;
 
   @override
+  void initState() {
+    super.initState();
+    _restoreLocale();
+  }
+
+  Future<void> _restoreLocale() async {
+    final saved = await LocalePersistence.load();
+    if (mounted && saved != null) {
+      ref.read(localeProvider.notifier).state = saved;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeProvider);
+    final locale = ref.watch(localeProvider);
 
     // 登录后初始化 FCM
     ref.listen(authStateProvider, (prev, next) {
@@ -63,11 +80,19 @@ class _DaziAppState extends ConsumerState<DaziApp> {
     return _GlassThemeWrapper(
       themeMode: themeMode,
       child: MaterialApp.router(
-        title: '搭子',
+        title: 'Dazi',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
         themeMode: themeMode,
+        locale: locale,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
         routerConfig: router,
       ),
     );

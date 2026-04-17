@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/CRISP/OneDrive/文档/dazi-app/**)",
+      "Bash(npx jest:*)",
+      "Bash(python scripts/run_ci.py)",
+      "Bash(flutter test:*)",
+      "Read(//c/Users/CRISP/OneDrive/文ដazi-app/functions/__tests__/**)",
+      "mcp__plugin_context7_context7__query-docs",
+      "mcp__plugin_context7_context7__resolve-library-id",
+      "Read(//c/Users/CRISP/bin/**)",
+      "Bash(firebase --version)",
+      "Bash(flutter analyze:*)",
+      "Bash(firebase emulators:start --only auth,firestore,functions)",
+      "Bash(C:/Users/CRISP/bin/chromedriver.exe --port=4444)",
+      "Bash(curl -s http://127.0.0.1:8080/)",
+      "Bash(curl -s http://127.0.0.1:9099/)",
+      "Bash(curl -s http://127.0.0.1:4444/status)",
+      "Bash(curl -s http://127.0.0.1:5001/)",
+      "Bash(curl -s http://127.0.0.1:4401/emulators)",
+      "Bash(curl -s http://127.0.0.1:4400/emulators)",
+      "Bash(netstat -ano)",
+      "Bash(findstr LISTENING)",
+      "Bash(findstr -E \":\\(8080|9099|5001|4400|4000\\)\")",
+      "Bash(flutter drive:*)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\CRISP\\OneDrive\\文档\\dazi-app\\functions",
+      "C:\\Users\\CRISP\\OneDrive\\文档\\dazi-app"
+    ]
+  }
+}

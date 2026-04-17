@@ -9,6 +9,9 @@
 | 任务 | 文件夹 | 状态 | 摘要 |
 |------|--------|------|------|
 | T0a 全面代码库盘点 | research-full-audit/ | 完成 2026-04-13(已由 custodian 2026-04-13 回填修正) | 0 CRIT 残留, RD-1/2/3 ADEQUATE, RD-4/5 WEAK; ~~SD-5 违反 16 处 withOpacity~~ → 实际 0 匹配(已由 714b2f8+14a7553 清零),profile_screen 820>800 |
+| 社交APP前沿技术与市场调研 | research-social-trends/ | 完成 2026-04-16 | 搭子赛道投融资热（68%），核心痛点安全信任+留存；短期P0：实名认证+合规加固；中期：Firestore Vector Search推荐+兴趣圈子；长期：票务变现+B2B |
+| T5-01 身份验证集成方案 | research-identity-verification/ | 完成 2026-04-16 | 海外Stripe Identity($1.50/次)+国内阿里云实人认证；stripe_identity_plugin Flutter SDK；Webhook升级verificationLevel；发现toCreateMap rules白名单BUG |
+| T5-01 双轨全球化架构 | research-global-architecture/ | 完成 2026-04-16 | Firebase中国不可用→独立项目；推送:FCM+阿里云推送；支付:Stripe+微信/支付宝；不引入RevenueCat；短期仅海外，中期启国内 |
 
 详细发现见: `.plans/dazi-app/researcher/research-full-audit/findings.md`
 

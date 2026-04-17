@@ -18,6 +18,8 @@ class AppUser {
   final bool sesameAuthorized;
   final int totalMeetups;
   final List<String> badges;
+  final int trustScore;
+  final String trustLevel;
   final String city;
   final List<String> blockedUsers;
   final List<Map<String, String>> emergencyContacts;
@@ -43,6 +45,8 @@ class AppUser {
     required this.sesameAuthorized,
     required this.totalMeetups,
     required this.badges,
+    this.trustScore = 60,
+    this.trustLevel = 'normal',
     required this.city,
     required this.blockedUsers,
     this.emergencyContacts = const [],
@@ -78,6 +82,8 @@ class AppUser {
       sesameAuthorized: data['sesameAuthorized'] as bool? ?? false,
       totalMeetups: (data['totalMeetups'] as num?)?.toInt() ?? 0,
       badges: (data['badges'] as List<dynamic>?)?.cast<String>() ?? const [],
+      trustScore: (data['trustScore'] as num?)?.toInt() ?? 60,
+      trustLevel: data['trustLevel'] as String? ?? 'normal',
       city: data['city'] as String? ?? '',
       blockedUsers:
           (data['blockedUsers'] as List<dynamic>?)?.cast<String>() ?? const [],
@@ -101,19 +107,17 @@ class AppUser {
         'bio': bio,
         'gender': gender,
         'birthYear': birthYear,
-        'phone': phone,
         'tags': tags,
         'rating': 5.0,
         'reviewCount': 0,
         'ghostCount': 0,
         'isRestricted': false,
-        'verificationLevel': 1,
         'sesameAuthorized': false,
         'totalMeetups': 0,
         'badges': <String>[],
         'city': city,
         'blockedUsers': <String>[],
         'createdAt': FieldValue.serverTimestamp(),
-        'lastActive': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
       };
 }

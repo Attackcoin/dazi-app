@@ -10,15 +10,16 @@ class _MyPostsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final async = ref.watch(postsByUserProvider(uid));
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => _ErrorState(
-        message: '加载失败：$e',
+        message: l10n.common_loadFailedWithError('$e'),
         onRetry: () => ref.invalidate(postsByUserProvider(uid)),
       ),
       data: (list) {
-        if (list.isEmpty) return const _EmptyState(text: '还没有发布过搭子');
+        if (list.isEmpty) return _EmptyState(text: l10n.profile_noPosts);
         return ListView.separated(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 80),
           itemCount: list.length,
@@ -73,7 +74,7 @@ class _PostItem extends StatelessWidget {
             ),
           ),
           Text(
-            _postStatusLabel(post.status),
+            _postStatusLabel(AppLocalizations.of(context)!, post.status),
             style: TextStyle(
                 fontSize: 11, color: gt.colors.textTertiary),
           ),
@@ -83,12 +84,12 @@ class _PostItem extends StatelessWidget {
   }
 }
 
-String _postStatusLabel(PostStatus s) => switch (s) {
-      PostStatus.open => '报名中',
-      PostStatus.full => '已满员',
-      PostStatus.done => '已结束',
-      PostStatus.cancelled => '已取消',
-      PostStatus.expired => '已过期',
+String _postStatusLabel(AppLocalizations l10n, PostStatus s) => switch (s) {
+      PostStatus.open => l10n.postStatus_open,
+      PostStatus.full => l10n.postStatus_full,
+      PostStatus.done => l10n.postStatus_done,
+      PostStatus.cancelled => l10n.postStatus_cancelled,
+      PostStatus.expired => l10n.postStatus_expired,
     };
 
 class _MyApplicationsTab extends ConsumerWidget {
@@ -97,15 +98,16 @@ class _MyApplicationsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final async = ref.watch(applicationsByApplicantProvider(uid));
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => _ErrorState(
-        message: '加载失败：$e',
+        message: l10n.common_loadFailedWithError('$e'),
         onRetry: () => ref.invalidate(applicationsByApplicantProvider(uid)),
       ),
       data: (list) {
-        if (list.isEmpty) return const _EmptyState(text: '还没有申请过搭子');
+        if (list.isEmpty) return _EmptyState(text: l10n.profile_noApplications);
         return ListView.separated(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 80),
           itemCount: list.length,
@@ -154,7 +156,7 @@ class _ApplicationItem extends StatelessWidget {
               borderRadius: BorderRadius.circular(999),
             ),
             child: Text(
-              app.status.label,
+              _applicationStatusLabel(AppLocalizations.of(context)!, app.status),
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
@@ -166,6 +168,15 @@ class _ApplicationItem extends StatelessWidget {
       ),
     );
   }
+
+  String _applicationStatusLabel(AppLocalizations l10n, ApplicationStatus s) => switch (s) {
+        ApplicationStatus.pending => l10n.applicationList_statusPending,
+        ApplicationStatus.accepted => l10n.applicationList_statusAccepted,
+        ApplicationStatus.rejected => l10n.applicationList_statusRejected,
+        ApplicationStatus.waitlisted => l10n.applicationList_statusWaitlisted,
+        ApplicationStatus.expired => l10n.applicationList_statusExpired,
+        ApplicationStatus.cancelled => l10n.applicationList_statusCancelled,
+      };
 
   Color _statusColor(GlassThemeData gt, ApplicationStatus s) => switch (s) {
         ApplicationStatus.accepted => gt.colors.success,
@@ -185,8 +196,9 @@ class _JoinedTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gt = GlassTheme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     if (user.totalMeetups == 0) {
-      return const _EmptyState(text: '还没有参加过任何搭子');
+      return _EmptyState(text: l10n.profile_noJoined);
     }
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 80),
@@ -202,7 +214,7 @@ class _JoinedTab extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    '共参加过 ${user.totalMeetups} 次搭子活动',
+                    l10n.profile_joinedCount(user.totalMeetups),
                     style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -214,7 +226,7 @@ class _JoinedTab extends StatelessWidget {
           ),
           if (user.badges.isNotEmpty) ...[
             const SizedBox(height: 16),
-            _SectionTitle('勋章'),
+            _SectionTitle(l10n.profile_badges),
             const SizedBox(height: 10),
             Wrap(
               spacing: 8,

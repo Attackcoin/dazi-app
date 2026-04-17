@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/glass_theme.dart';
@@ -57,17 +58,18 @@ class _StepCityState extends ConsumerState<StepCity> {
   @override
   Widget build(BuildContext context) {
     final gt = GlassTheme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.all(Spacing.space24),
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('你在哪座城市？',
+            Text(l10n.onboarding_city_title,
                 style: Theme.of(context).textTheme.displayLarge),
             const SizedBox(height: Spacing.space8),
             Text(
-              '我们会推荐同城的活动',
+              l10n.onboarding_city_subtitle,
               style: Theme.of(context)
                   .textTheme
                   .bodyLarge
@@ -94,7 +96,7 @@ class _StepCityState extends ConsumerState<StepCity> {
                           strokeWidth: 2, color: gt.colors.primary),
                     ),
                     const SizedBox(width: 10),
-                    Text('正在定位...',
+                    Text(l10n.onboarding_city_locating,
                         style: TextStyle(
                             fontSize: 14, color: gt.colors.textSecondary)),
                   ],
@@ -131,7 +133,7 @@ class _StepCityState extends ConsumerState<StepCity> {
 
             const SizedBox(height: 28),
             Text(
-              '中国热门',
+              l10n.onboarding_city_cnHot,
               style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -142,7 +144,7 @@ class _StepCityState extends ConsumerState<StepCity> {
 
             const SizedBox(height: Spacing.space24),
             Text(
-              'Global',
+              l10n.onboarding_city_global,
               style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -153,7 +155,7 @@ class _StepCityState extends ConsumerState<StepCity> {
 
             const SizedBox(height: 28),
             Text(
-              '或手动输入',
+              l10n.onboarding_city_manualInput,
               style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -161,8 +163,8 @@ class _StepCityState extends ConsumerState<StepCity> {
             ),
             const SizedBox(height: Spacing.space12),
             TextField(
-              decoration: const InputDecoration(
-                hintText: '输入城市名 / Enter city name',
+              decoration: InputDecoration(
+                hintText: l10n.onboarding_city_searchHint,
                 prefixIcon: Icon(Icons.search),
               ),
               onChanged: widget.onChanged,

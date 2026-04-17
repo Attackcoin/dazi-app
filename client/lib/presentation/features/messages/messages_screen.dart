@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -10,6 +11,7 @@ import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/glow_background.dart';
 import '../../../data/models/match.dart';
 import '../../../data/repositories/match_repository.dart';
+import '../../../data/repositories/safety_repository.dart';
 
 /// 消息列表页 —— 展示当前用户加入的所有局的群聊。
 class MessagesScreen extends ConsumerWidget {
@@ -24,43 +26,50 @@ class MessagesScreen extends ConsumerWidget {
       backgroundColor: gt.colors.base,
       appBar: AppBar(
         backgroundColor: gt.colors.surface,
-        title: const Text('消息'),
+        title: Text(AppLocalizations.of(context)!.messages_title),
         centerTitle: false,
         automaticallyImplyLeading: false,
       ),
       body: GlowBackground(
-        child: matchesAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => ErrorRetryView(
-            error: e,
-            onRetry: () => ref.invalidate(myMatchesProvider),
-          ),
-          data: (matches) {
-            if (matches.isEmpty) return const _EmptyState();
+        child: Column(
+          children: [
+            _SafetyAlertBanner(ref: ref),
+            Expanded(
+              child: matchesAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => ErrorRetryView(
+                  error: e,
+                  onRetry: () => ref.invalidate(myMatchesProvider),
+                ),
+                data: (matches) {
+                  if (matches.isEmpty) return const _EmptyState();
 
-            // 按 postId 分组 —— 一个局只显示一条
-            final seen = <String>{};
-            final grouped = <AppMatch>[];
-            for (final m in matches) {
-              if (seen.add(m.postId)) {
-                grouped.add(m);
-              }
-            }
+                  // 按 postId 分组 —— 一个局只显示一条
+                  final seen = <String>{};
+                  final grouped = <AppMatch>[];
+                  for (final m in matches) {
+                    if (seen.add(m.postId)) {
+                      grouped.add(m);
+                    }
+                  }
 
-            return ListView.separated(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: grouped.length,
-              separatorBuilder: (_, __) => Divider(
-                height: 1,
-                indent: 80,
-                color: gt.colors.glassL1Border,
+                  return ListView.separated(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: grouped.length,
+                    separatorBuilder: (_, __) => Divider(
+                      height: 1,
+                      indent: 80,
+                      color: gt.colors.glassL1Border,
+                    ),
+                    itemBuilder: (_, i) => AnimatedListItem(
+                      index: i,
+                      child: _GroupChatTile(match: grouped[i]),
+                    ),
+                  );
+                },
               ),
-              itemBuilder: (_, i) => AnimatedListItem(
-                index: i,
-                child: _GroupChatTile(match: grouped[i]),
-              ),
-            );
-          },
+            ),
+          ],
         ),
       ),
     );
@@ -101,7 +110,7 @@ class _GroupChatTile extends StatelessWidget {
           ),
         ),
         title: Text(
-          match.postTitle.isNotEmpty ? match.postTitle : '搭子群聊',
+          match.postTitle.isNotEmpty ? match.postTitle : AppLocalizations.of(context)!.messages_defaultChatTitle,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
@@ -117,7 +126,7 @@ class _GroupChatTile extends StatelessWidget {
               Icon(Icons.people_outline, size: 13, color: gt.colors.textTertiary),
               const SizedBox(width: 3),
               Text(
-                '$memberCount人',
+                AppLocalizations.of(context)!.messages_peopleCount(memberCount),
                 style: TextStyle(
                   fontSize: 11,
                   color: gt.colors.textTertiary,
@@ -126,7 +135,7 @@ class _GroupChatTile extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  match.lastMessagePreview ?? '快去打个招呼吧~',
+                  match.lastMessagePreview ?? AppLocalizations.of(context)!.messages_sayHiHint,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -143,7 +152,7 @@ class _GroupChatTile extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              _formatTime(match.lastMessageAt),
+              _formatTime(context, match.lastMessageAt),
               style: TextStyle(
                 fontSize: 11,
                 color: gt.colors.textTertiary,
@@ -168,15 +177,16 @@ class _GroupChatTile extends StatelessWidget {
     return '🎉';
   }
 
-  String _formatTime(DateTime? t) {
+  String _formatTime(BuildContext context, DateTime? t) {
     if (t == null) return '';
+    final l10n = AppLocalizations.of(context)!;
     final now = DateTime.now();
     final diff = now.difference(t);
-    if (diff.inMinutes < 1) return '刚刚';
-    if (diff.inHours < 1) return '${diff.inMinutes}分钟前';
+    if (diff.inMinutes < 1) return l10n.messages_justNow;
+    if (diff.inHours < 1) return l10n.messages_minutesAgo(diff.inMinutes);
     if (diff.inDays < 1) return DateFormat('HH:mm').format(t);
-    if (diff.inDays < 7) return '${diff.inDays}天前';
-    return DateFormat('M月d日').format(t);
+    if (diff.inDays < 7) return l10n.messages_daysAgo(diff.inDays);
+    return DateFormat('M/d').format(t);
   }
 }
 
@@ -202,6 +212,40 @@ class _CategoryTag extends StatelessWidget {
           color: gt.colors.primary,
           fontWeight: FontWeight.w600,
         ),
+      ),
+    );
+  }
+}
+
+/// 消息列表页顶部的安全提醒横幅。
+class _SafetyAlertBanner extends StatelessWidget {
+  const _SafetyAlertBanner({required this.ref});
+
+  final WidgetRef ref;
+
+  @override
+  Widget build(BuildContext context) {
+    final alerts = ref.watch(pendingSafetyAlertsProvider).valueOrNull ?? const [];
+    if (alerts.isEmpty) return const SizedBox.shrink();
+
+    final gt = GlassTheme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      color: gt.colors.error.withValues(alpha: 0.12),
+      child: Row(
+        children: [
+          Icon(Icons.shield_outlined, size: 18, color: gt.colors.error),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              l10n.safety_bannerPending,
+              style: TextStyle(fontSize: 12, color: gt.colors.textPrimary),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -256,7 +300,7 @@ class _EmptyStateState extends State<_EmptyState> with SingleTickerProviderState
           ),
           const SizedBox(height: 16),
           Text(
-            '还没有群聊',
+            AppLocalizations.of(context)!.messages_emptyTitle,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -265,7 +309,7 @@ class _EmptyStateState extends State<_EmptyState> with SingleTickerProviderState
           ),
           const SizedBox(height: 8),
           Text(
-            '滑一滑加入一个局吧~',
+            AppLocalizations.of(context)!.messages_emptyHint,
             style: TextStyle(fontSize: 13, color: gt.colors.textSecondary),
           ),
         ],

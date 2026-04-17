@@ -11,6 +11,7 @@ class _HeaderBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gt = GlassTheme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       decoration: const BoxDecoration(gradient: LinearGradient(
         begin: Alignment.topLeft,
@@ -30,7 +31,7 @@ class _HeaderBackground extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Semantics(
-                label: '昵称 ${user.name}',
+                label: user.name,
                 header: true,
                 child: Text(
                   user.name,
@@ -59,11 +60,12 @@ class _HeaderBackground extends StatelessWidget {
                     style: TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                   Text(
-                    '${user.reviewCount} 条评价',
+                    l10n.profile_reviewCount(user.reviewCount),
                     style:
                         const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                   const SizedBox(width: 10),
+                  if (user.verificationLevel >= 2) const _VerifiedBadge(),
                   if (user.sesameAuthorized) const _SesameBadge(),
                 ],
               ),
@@ -75,13 +77,14 @@ class _HeaderBackground extends StatelessWidget {
   }
 }
 
-class _SesameBadge extends StatelessWidget {
-  const _SesameBadge();
+class _VerifiedBadge extends StatelessWidget {
+  const _VerifiedBadge();
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Semantics(
-      label: '信用徽章：芝麻信用已授权',
+      label: l10n.profile_verifiedA11y,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
@@ -89,13 +92,46 @@ class _SesameBadge extends StatelessWidget {
           borderRadius: BorderRadius.circular(999),
           border: Border.all(color: Colors.white54),
         ),
-        child: const Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.verified, color: Colors.white, size: 13),
-            SizedBox(width: 3),
-            Text('信用',
-                style: TextStyle(
+            const Icon(Icons.verified_user, color: Colors.white, size: 13),
+            const SizedBox(width: 3),
+            Text(l10n.profile_verified,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                )),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SesameBadge extends StatelessWidget {
+  const _SesameBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Semantics(
+      label: l10n.profile_sesameBadgeA11y,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.22),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: Colors.white54),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.verified, color: Colors.white, size: 13),
+            const SizedBox(width: 3),
+            Text(l10n.profile_sesameBadge,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -116,7 +152,6 @@ class _Avatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: '用户头像',
       image: true,
       child: Container(
         width: size,

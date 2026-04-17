@@ -11,6 +11,8 @@ import 'package:dazi_app/data/repositories/user_repository.dart';
 import 'package:dazi_app/presentation/features/profile/profile_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -98,6 +100,14 @@ Widget _buildProfileApp({
     child: GlassTheme(
       data: GlassThemeData.dark,
       child: MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('zh'),
         home: child,
       ),
     ),
@@ -156,6 +166,10 @@ void main() {
 
   testWidgets('ProfileScreen 自己视角（已登录 + 无 uid 参数）显示编辑/设置按钮',
       (tester) async {
+    // 自己视角多了 _VerifyIdentityPrompt sliver，需要更大视口才能让 TabBar 落入 viewport
+    await tester.binding.setSurfaceSize(const Size(800, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
     // 真正的 self 路径:authState 有 uid,路由未显式传 uid → isSelf=true。
     final user = _fakeUser();
     await tester.pumpWidget(
@@ -176,6 +190,7 @@ void main() {
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
+    await tester.pumpAndSettle();
 
     expect(find.text('测试昵称'), findsOneWidget);
     // 自己视角 Tab 文案为第一人称

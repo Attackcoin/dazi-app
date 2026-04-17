@@ -12,12 +12,12 @@
 
 | 名称 | 角色 | 模型 | subagent_type | 工作目录 |
 |------|------|------|---------------|---------|
-| backend-dev | 后端开发（Firebase Functions + Firestore） | sonnet | general-purpose | `.plans/dazi-app/backend-dev/` |
-| frontend-dev | 前端开发（Flutter） | sonnet | general-purpose | `.plans/dazi-app/frontend-dev/` |
-| researcher | 探索/研究（只读） | sonnet | general-purpose | `.plans/dazi-app/researcher/` |
-| e2e-tester | 联调测试（Flutter integration test + Playwright） | sonnet | general-purpose | `.plans/dazi-app/e2e-tester/` |
-| reviewer | 代码审查（只读源码） | sonnet | general-purpose | `.plans/dazi-app/reviewer/` |
-| custodian | 管家（合规 + 文档治理） | sonnet | general-purpose | `.plans/dazi-app/custodian/` |
+| backend-dev | 后端开发（Firebase Functions + Firestore） | opus (4.6) | general-purpose | `.plans/dazi-app/backend-dev/` |
+| frontend-dev | 前端开发（Flutter） | opus (4.6) | general-purpose | `.plans/dazi-app/frontend-dev/` |
+| researcher | 探索/研究（只读） | opus (4.6) | general-purpose | `.plans/dazi-app/researcher/` |
+| e2e-tester | 联调测试（Flutter integration test + Playwright） | opus (4.6) | general-purpose | `.plans/dazi-app/e2e-tester/` |
+| reviewer | 代码审查（只读源码） | opus (4.6) | general-purpose | `.plans/dazi-app/reviewer/` |
+| custodian | 管家（合规 + 文档治理） | opus (4.6) | general-purpose | `.plans/dazi-app/custodian/` |
 
 Team-lead = 主对话（不 spawn），控制平面。
 

@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../../../../core/theme/dazi_colors.dart';
 import '../../../../core/theme/glass_theme.dart';
@@ -14,6 +15,7 @@ class StepYear extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gt = GlassTheme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final currentYear = DateTime.now().year;
     const minYear = 1950;
     final maxYear = currentYear - 18;
@@ -24,10 +26,10 @@ class StepYear extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('你的出生年份', style: Theme.of(context).textTheme.displayLarge),
+          Text(l10n.onboarding_year_title, style: Theme.of(context).textTheme.displayLarge),
           const SizedBox(height: Spacing.space8),
           Text(
-            '仅用于匹配同龄人，不会公开完整生日',
+            l10n.onboarding_year_subtitle,
             style: Theme.of(context)
                 .textTheme
                 .bodyLarge
@@ -56,9 +58,9 @@ class StepYear extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: Spacing.space8),
-                  const Text(
-                    '年',
-                    style: TextStyle(
+                  Text(
+                    l10n.onboarding_year_suffix,
+                    style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 16,
                     ),

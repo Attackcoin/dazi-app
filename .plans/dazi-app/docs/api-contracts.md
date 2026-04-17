@@ -41,6 +41,74 @@
 - **签名**：目前 HMAC-SHA256 (`x-dazi-signature` header + `PAYMENT_CALLBACK_SECRET` 环境变量)
 - **CAS**：SUCCESS 分支在 runTransaction 内检查 `status==pending_payment` 才转 `frozen`；已 `frozen` 幂等 no-op；其他状态 warn 后 no-op（H-7）
 
+### submitQuickFeedback (onCall)
+- **请求**：`{ matchId, feedback: "met" | "no_show" }`
+- **响应**：`{ success }`
+- **校验**：`feedback` 必须是 `"met"` 或 `"no_show"`；调用者必须是 `match.participants` 成员
+- **状态限制**：match.status 必须为 `completed` / `ghosted` / `ghosted_all`
+- **幂等**：每个参与者只能提交一次，二次调用 throw `already-exists`
+- **写入方式**：Admin SDK 点路径 `quickFeedback.{uid}` 更新（不走 rules）
+- **触发时机**：match 完成或签到超时后，通过 FCM 推送 `quick_feedback` 类型通知提醒用户
+
+### startIdentityVerification (onCall)
+- **请求**：`{}`（无参数）
+- **响应**：`{ clientSecret, verificationSessionId }`
+- **前置**：已认证用户，`verificationLevel < 2`
+- **错误码**：
+  - `unauthenticated` — 未登录
+  - `not-found` — 用户文档不存在
+  - `already-exists` — 已完成证件验证（level >= 2）
+  - `failed-precondition` — STRIPE_SECRET_KEY 未配置
+- **内部**：创建 Stripe VerificationSession（type: 'document'），metadata 写入 uid
+- **客户端使用**：拿 clientSecret 初始化 Stripe Identity SDK 前端验证流程
+
+### stripeIdentityWebhook (onRequest, HTTP endpoint)
+- **URL**：`https://asia-southeast1-<project>.cloudfunctions.net/stripeIdentityWebhook`
+- **方法**：POST
+- **签名验证**：Stripe webhook 签名（`stripe-signature` header + `STRIPE_WEBHOOK_SECRET` 环境变量）
+- **处理的事件**：
+  - `identity.verification_session.verified` — 从 session.metadata 取 uid，更新 `users/{uid}.verificationLevel` 为 2，写入 `verifiedAt` 服务端时间戳
+  - `identity.verification_session.requires_input` — 记录日志（用户需补充输入）
+- **响应**：`200 { received: true }`（所有合法签名的事件）；`400`（签名无效）；`500`（STRIPE_WEBHOOK_SECRET 未配置）
+- **环境变量**：`STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET`
+- **部署注意**：需在 Stripe Dashboard 配置 webhook endpoint URL 和订阅 `identity.verification_session.*` 事件
+
+### createSeriesPosts (onCall)
+- **请求**：`{ templatePost: { title, description, category, time (ISO string), location, totalSlots, minSlots, gender, genderQuota, costType, depositAmount, images, tags, isSocialAnxietyFriendly, isInstant }, recurrence: "weekly" | "biweekly", totalWeeks: 2-8 }`
+- **响应**：`{ seriesId, postIds: string[] }`
+- **逻辑**：
+  - 认证检查 + 参数验证（totalWeeks 2-8 整数，recurrence 合法）
+  - 生成 seriesId（Firestore auto-ID）
+  - 获取用户信息（publisherName, publisherAvatar）
+  - batch write 创建 totalWeeks 个 post 文档
+  - 第 N 个帖子 time = baseTime + (N-1) * 7天(weekly) 或 14天(biweekly)
+  - title 格式：`${originalTitle}（第${week}/${totalWeeks}周）`
+  - 每个文档设置：seriesId, recurrence, seriesWeek (1-N), seriesTotalWeeks
+  - 标准初始值：status='open', waitlist=[], acceptedGender={male:0,female:0}
+- **错误码**：
+  - `unauthenticated` — 未登录
+  - `invalid-argument` — templatePost/recurrence/totalWeeks 参数非法
+  - `not-found` — 用户文档不存在
+- **Post 新增字段**：`seriesId` (String), `recurrence` ("weekly"|"biweekly"), `seriesWeek` (int, 1-based), `seriesTotalWeeks` (int)
+- **索引**：posts 复合索引 `seriesId ASC + seriesWeek ASC`（查询同系列所有帖子）
+- **Rules**：seriesId/recurrence/seriesWeek/seriesTotalWeeks 在 posts create 白名单中，不在 update 白名单（创建后不可改）
+
+### confirmSafety (onCall)
+- **请求**：`{}`（无参数）
+- **响应**：`{ success: true }`
+- **逻辑**：查找当前用户最新的 `safetyAlerts` 中 `status=='pending'` 的记录，更新为 `confirmed` + 写入 `confirmedAt`
+- **错误码**：
+  - `unauthenticated` — 未登录
+  - `not-found` — 没有待确认的安全提醒
+- **触发前提**：`onCheckinTimeout` 检测到未签到用户且该用户设置了紧急联系人时，自动创建 `safetyAlerts/{matchId}_{uid}` 文档并推送 FCM 通知
+
+### escalateSafetyAlert (scheduled, `every 10 minutes`)
+- **逻辑**：查询 `safetyAlerts` 中 `status=='pending'` 且 `expiresAt <= now` 的文档
+  - 更新 status 为 `escalated` + 写入 `escalatedAt`
+  - MVP 阶段：记录日志 + 给用户发强提醒推送（"你的紧急联系人已被通知"）
+  - 后续版本：发送短信/邮件给紧急联系人
+- **安全流程时间线**：未签到 → 创建 alert(pending, 30min TTL) → 用户可 `confirmSafety` → 30min 过期 → `escalateSafetyAlert` 升级
+
 ### generateIcebreakers / generateRecapCard (onCall)
 - **鉴权**：仅 `match.participants.includes(context.auth.uid)` 可调用（H-6）
 - **内部函数** `_generateRecapCard` 不加校验，由 `antiGhosting` 可信路径触发
@@ -54,11 +122,12 @@
 | Collection | 用途 | 关键字段 |
 |-----------|------|---------|
 | users | 用户信息 | name, avatar, city, tags, rating |
-| posts | 帖子/局 | title, category, time, location, totalSlots, status |
+| posts | 帖子/局 | title, category, time, location, totalSlots, status, seriesId?, recurrence?, seriesWeek?, seriesTotalWeeks? |
 | applications | 申请记录 | postId, applicantId, status |
-| matches | 匹配记录 | postId, participants |
+| matches | 匹配记录 | postId, participants, quickFeedback |
 | reviews | 评价 | fromUid, toUid, postId, rating, tags |
 | categories | 分类配置 | id, label, emoji |
+| safetyAlerts | 安全提醒 | matchId, uid, emergencyContacts, status(pending/confirmed/escalated), expiresAt |
 
 ## Realtime Database
 

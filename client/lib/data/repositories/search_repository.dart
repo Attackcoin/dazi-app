@@ -20,17 +20,38 @@ class SearchQuery {
   final String? city;
   final String? category;
 
-  const SearchQuery({required this.query, this.city, this.category});
+  /// 地理搜索参数（Phase A: T5-04 GeoSearch）。
+  /// 当 [lat] 和 [lng] 同时有值时启用 Algolia `aroundLatLng` 搜索。
+  final double? lat;
+  final double? lng;
+
+  /// 搜索半径（米）。为 null 时 Algolia 自动计算密度半径。
+  final int? radiusMeters;
+
+  const SearchQuery({
+    required this.query,
+    this.city,
+    this.category,
+    this.lat,
+    this.lng,
+    this.radiusMeters,
+  });
+
+  /// 是否启用了地理搜索。
+  bool get hasGeo => lat != null && lng != null;
 
   @override
   bool operator ==(Object other) =>
       other is SearchQuery &&
       other.query == query &&
       other.city == city &&
-      other.category == category;
+      other.category == category &&
+      other.lat == lat &&
+      other.lng == lng &&
+      other.radiusMeters == radiusMeters;
 
   @override
-  int get hashCode => Object.hash(query, city, category);
+  int get hashCode => Object.hash(query, city, category, lat, lng, radiusMeters);
 }
 
 /// 搜索结果 Stream Provider —— family-scoped `HitsSearcher`。
@@ -39,10 +60,11 @@ class SearchQuery {
 /// 共享同一条 `responses` Stream 导致的竞态（BLOCK-1）。Provider 释放时
 /// 通过 `ref.onDispose` 调用 `searcher.dispose()`，生命周期与 family key 对齐。
 ///
-/// 空 query 直接发空列表，避免无谓请求。
+/// 空 query 且无地理搜索时直接发空列表，避免无谓请求。
+/// 地理搜索模式下允许空 query（Algolia 返回全部结果，按距离排序）。
 final searchResultsProvider =
     StreamProvider.family<List<Post>, SearchQuery>((ref, q) {
-  if (q.query.trim().isEmpty) {
+  if (q.query.trim().isEmpty && !q.hasGeo) {
     return Stream.value(const <Post>[]);
   }
 
@@ -74,6 +96,9 @@ final searchResultsProvider =
                 facetFilters,
               ),
             },
+      // Phase A (T5-04): 地理搜索 —— aroundLatLng 格式 "lat,lng"
+      aroundLatLng: q.hasGeo ? '${q.lat},${q.lng}' : null,
+      aroundRadius: q.hasGeo ? (q.radiusMeters ?? 'all') : null,
     ),
   );
 

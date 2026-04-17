@@ -1,11 +1,13 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/post.dart';
+import 'application_repository.dart' show firebaseFunctionsProvider;
 import 'auth_repository.dart';
 
 final postCreateRepositoryProvider = Provider<PostCreateRepository>((ref) {
@@ -13,6 +15,7 @@ final postCreateRepositoryProvider = Provider<PostCreateRepository>((ref) {
     firestore: ref.watch(firestoreProvider),
     auth: ref.watch(firebaseAuthProvider),
     storage: ref.watch(firebaseStorageProvider),
+    functions: ref.watch(firebaseFunctionsProvider),
   );
 });
 
@@ -25,6 +28,11 @@ class PostDraft {
   DateTime? time;
   String locationName;
   String city;
+
+  /// 地点经纬度（T5-04 GeoSearch）—— 用于 Algolia _geoloc 索引。
+  double? locationLat;
+  double? locationLng;
+
   int totalSlots;
   int? maleQuota;
   int? femaleQuota;
@@ -32,6 +40,8 @@ class PostDraft {
   int depositAmount;
   bool isSocialAnxietyFriendly;
   bool isInstant;
+  bool womenOnly;
+  double participationFee;
 
   PostDraft({
     this.category = '',
@@ -41,6 +51,8 @@ class PostDraft {
     this.time,
     this.locationName = '',
     this.city = '',
+    this.locationLat,
+    this.locationLng,
     this.totalSlots = 4,
     this.maleQuota,
     this.femaleQuota,
@@ -48,6 +60,8 @@ class PostDraft {
     this.depositAmount = 0,
     this.isSocialAnxietyFriendly = false,
     this.isInstant = false,
+    this.womenOnly = false,
+    this.participationFee = 0,
   });
 
   /// 校验草稿是否可发布。返回错误信息或 null。
@@ -73,13 +87,16 @@ class PostCreateRepository {
     required FirebaseFirestore firestore,
     required FirebaseAuth auth,
     required FirebaseStorage storage,
+    required FirebaseFunctions functions,
   })  : _firestore = firestore,
         _auth = auth,
-        _storage = storage;
+        _storage = storage,
+        _functions = functions;
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
   final FirebaseStorage _storage;
+  final FirebaseFunctions _functions;
 
   /// 上传图片到 Firebase Storage，返回下载 URL。
   Future<String> uploadImage(File file) async {
@@ -106,10 +123,13 @@ class PostCreateRepository {
       'location': {
         'name': draft.locationName.trim(),
         'city': draft.city,
+        if (draft.locationLat != null) 'lat': draft.locationLat,
+        if (draft.locationLng != null) 'lng': draft.locationLng,
       },
       'totalSlots': draft.totalSlots,
       'costType': draft.costType.value,
       'isSocialAnxietyFriendly': draft.isSocialAnxietyFriendly,
+      if (draft.womenOnly) 'womenOnly': true,
     });
   }
 
@@ -147,6 +167,8 @@ class PostCreateRepository {
       'location': {
         'name': draft.locationName.trim(),
         'city': draft.city,
+        if (draft.locationLat != null) 'lat': draft.locationLat,
+        if (draft.locationLng != null) 'lng': draft.locationLng,
       },
       'totalSlots': draft.totalSlots,
       'minSlots': 2,
@@ -167,7 +189,48 @@ class PostCreateRepository {
       'expiresAt': Timestamp.fromDate(
         draft.time!.add(const Duration(hours: 2)),
       ),
+      if (draft.participationFee > 0) 'participationFee': draft.participationFee,
     });
     return doc.id;
+  }
+
+  /// 创建系列活动 —— 调用 Cloud Function `createSeriesPosts` 批量创建 N 个帖子。
+  ///
+  /// 返回 Cloud Function 的响应 map，包含 `seriesId` 和 `postIds` 列表。
+  Future<Map<String, dynamic>> createSeries({
+    required PostDraft draft,
+    required String recurrence,
+    required int totalWeeks,
+  }) async {
+    final result = await _functions.httpsCallable('createSeriesPosts').call({
+      'templatePost': {
+        'category': draft.category,
+        'title': draft.title.trim(),
+        'description': draft.description.trim(),
+        'images': draft.imageUrls,
+        'time': draft.time!.millisecondsSinceEpoch,
+        'location': {
+          'name': draft.locationName.trim(),
+          'city': draft.city,
+          if (draft.locationLat != null) 'lat': draft.locationLat,
+          if (draft.locationLng != null) 'lng': draft.locationLng,
+        },
+        'totalSlots': draft.totalSlots,
+        'minSlots': 2,
+        'genderQuota': (draft.maleQuota == null && draft.femaleQuota == null)
+            ? null
+            : {
+                'male': draft.maleQuota,
+                'female': draft.femaleQuota,
+              },
+        'costType': draft.costType.value,
+        'depositAmount': draft.depositAmount,
+        'isInstant': draft.isInstant,
+        'isSocialAnxietyFriendly': draft.isSocialAnxietyFriendly,
+      },
+      'recurrence': recurrence,
+      'totalWeeks': totalWeeks,
+    });
+    return Map<String, dynamic>.from(result.data as Map);
   }
 }

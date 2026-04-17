@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -90,14 +91,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         'tags': _data.tags,
         'city': _data.city.trim(),
         'isSocialAnxietyFriendly': _data.socialAnxietyMode,
-        'lastActive': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
       });
       if (!mounted) return;
       context.go('/');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('保存失败：$e')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.common_saveFailed('$e'))),
       );
       setState(() => _submitting = false);
     }
@@ -219,7 +220,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       padding: const EdgeInsets.fromLTRB(
           Spacing.space24, Spacing.space12, Spacing.space24, Spacing.space24),
       child: GlassButton(
-        label: _currentStep == _totalSteps - 1 ? '完成' : '下一步',
+        label: _currentStep == _totalSteps - 1 ? AppLocalizations.of(context)!.onboarding_complete : AppLocalizations.of(context)!.onboarding_nextStep,
         onPressed: (_canProceed && !_submitting) ? _next : null,
         variant: GlassButtonVariant.primary,
         isLoading: _submitting,

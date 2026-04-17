@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -30,15 +31,6 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   final _commentController = TextEditingController();
   bool _submitting = false;
 
-  static const _positiveTags = [
-    '好相处', '守时', '靠谱', '聊得来', '有礼貌',
-    '热情', '氛围感', '会照顾人',
-  ];
-
-  static const _negativeTags = [
-    '放鸽子', '迟到', '态度差', '不合群',
-  ];
-
   @override
   void dispose() {
     _commentController.dispose();
@@ -65,7 +57,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
       setState(() => _submitting = false);
       final msg = RegExp(r'message: ([^,)]+)').firstMatch(e.toString())?.group(1);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('提交失败：${msg ?? e}')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.review_submitFailed('${msg ?? e}'))),
       );
     }
   }
@@ -82,7 +74,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          title: Text('写评价', style: TextStyle(color: gt.colors.textPrimary)),
+          title: Text(AppLocalizations.of(context)!.review_title, style: TextStyle(color: gt.colors.textPrimary)),
           iconTheme: IconThemeData(color: gt.colors.textPrimary),
         ),
         body: matchAsync.when(
@@ -92,8 +84,18 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
             onRetry: () => ref.invalidate(matchByIdProvider(widget.matchId)),
           ),
           data: (match) {
-            if (match == null) return Center(child: Text('搭子不存在', style: TextStyle(color: gt.colors.textPrimary)));
+            if (match == null) return Center(child: Text(AppLocalizations.of(context)!.review_matchNotExist, style: TextStyle(color: gt.colors.textPrimary)));
+            final l10n = AppLocalizations.of(context)!;
             final other = match.otherOf(myUid);
+            final positiveTags = [
+              l10n.review_tag_nice, l10n.review_tag_punctual, l10n.review_tag_reliable,
+              l10n.review_tag_chatty, l10n.review_tag_polite, l10n.review_tag_passionate,
+              l10n.review_tag_vibes, l10n.review_tag_caring,
+            ];
+            final negativeTags = [
+              l10n.review_tag_ghosted, l10n.review_tag_late,
+              l10n.review_tag_attitude, l10n.review_tag_unsocial,
+            ];
             return ListView(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
               children: [
@@ -105,19 +107,19 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                 const SizedBox(height: 32),
                 _buildStars(gt),
                 const SizedBox(height: 28),
-                _sectionLabel(gt, '好的印象'),
+                _sectionLabel(gt, l10n.review_positiveLabel),
                 const SizedBox(height: 10),
-                _buildTagWrap(gt, _positiveTags, false),
+                _buildTagWrap(gt, positiveTags, false),
                 const SizedBox(height: 20),
-                _sectionLabel(gt, '需要改进'),
+                _sectionLabel(gt, l10n.review_negativeLabel),
                 const SizedBox(height: 10),
-                _buildTagWrap(gt, _negativeTags, true),
+                _buildTagWrap(gt, negativeTags, true),
                 const SizedBox(height: 28),
-                _sectionLabel(gt, '留言'),
+                _sectionLabel(gt, l10n.review_commentLabel),
                 const SizedBox(height: 10),
                 GlassInput(
                   controller: _commentController,
-                  hint: '对这次搭子的感受、想说的话...',
+                  hint: l10n.review_commentHint,
                   maxLines: 4,
                 ),
               ],
@@ -133,7 +135,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
           child: SafeArea(
             top: false,
             child: GlassButton(
-              label: '提交评价',
+              label: AppLocalizations.of(context)!.review_submitButton,
               variant: GlassButtonVariant.primary,
               expand: true,
               isLoading: _submitting,
@@ -165,13 +167,13 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         ),
         const SizedBox(height: 12),
         Text(
-          other?.name ?? '搭子',
+          other?.name ?? AppLocalizations.of(context)!.review_partner,
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700,
               color: gt.colors.textPrimary),
         ),
         const SizedBox(height: 4),
         Text(
-          '这次搭子体验如何？',
+          AppLocalizations.of(context)!.review_experienceQuestion,
           style: TextStyle(fontSize: 13, color: gt.colors.textSecondary),
         ),
       ],

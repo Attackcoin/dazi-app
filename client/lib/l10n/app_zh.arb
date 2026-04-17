@@ -1,0 +1,814 @@
+{
+  "@@locale": "zh",
+
+  "appTitle": "搭子",
+
+  "apply_confirmButton": "确认申请",
+  "apply_joinWaitlist": "加入候补名单",
+  "apply_publisherReplyHint": "发布者会在 24 小时内回复你的申请",
+  "apply_waitlistHint": "当前活动已满员，加入候补后若有空位会自动递补",
+
+  "applicationList_accepted": "已接受申请",
+  "applicationList_acceptTooltip": "接受",
+  "applicationList_actionFailed": "操作失败：{error}",
+  "@applicationList_actionFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "applicationList_emptyHint": "还没有人申请哦～",
+  "applicationList_loadingName": "加载���...",
+  "applicationList_rejected": "已拒绝",
+  "applicationList_rejectTooltip": "拒绝",
+  "applicationList_statusAccepted": "已通过",
+  "applicationList_statusCancelled": "已取消",
+  "applicationList_statusExpired": "已过期",
+  "applicationList_statusPending": "审核中",
+  "applicationList_statusRejected": "已拒绝",
+  "applicationList_statusWaitlisted": "候补中",
+  "applicationList_title": "申请列表",
+  "applicationList_userAge": "{age}岁",
+  "@applicationList_userAge": {
+    "placeholders": {
+      "age": { "type": "String" }
+    }
+  },
+
+  "chat_activityDetail": "活动详情",
+  "chat_activityTime": "活动时间：{time}",
+  "@chat_activityTime": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "chat_defaultTitle": "群聊",
+  "chat_emptyHint": "群聊已创建，大家打个招呼吧~",
+  "chat_imageSendFailed": "图片发送失败：{error}",
+  "@chat_imageSendFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "chat_messageLoadFailed": "消息加载失败，请重试",
+  "chat_peopleCount": "{count}/{total} 人",
+  "@chat_peopleCount": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+
+  "common_actionFailed": "操作���败：{error}",
+  "@common_actionFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "common_cancel": "取消",
+  "common_confirm": "��定",
+  "common_loadFailed": "加载失败",
+  "common_loadFailedWithError": "加载失败：{error}",
+  "@common_loadFailedWithError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "common_locationTbd": "地点待定",
+  "common_nearby": "附近",
+  "common_retry": "重试",
+  "common_sameCity": "同城",
+  "common_saveFailed": "���存失败：{error}",
+  "@common_saveFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "common_timeTbd": "��间待定",
+  "common_tbd": "待定",
+
+  "costType_aa": "AA 制",
+  "costType_host": "发起人请客",
+  "costType_self": "各付各的",
+  "costType_tbd": "见面协商",
+
+  "createPost_addImage": "添加",
+  "createPost_aiGenerateDesc": "AI 帮写",
+  "createPost_categoryRequired": "分类 *",
+  "createPost_costTypeLabel": "费用方式",
+  "createPost_descHint": "介绍一下活动，吸引同好报名",
+  "createPost_descOptional": "描述（可选）",
+  "createPost_genderQuota": "性别配额",
+  "createPost_genderQuotaFemale": "女生",
+  "createPost_genderQuotaMale": "男生",
+  "createPost_genderQuotaOptional": "（可选）",
+  "createPost_genderQuotaTotal": "合计 {count} / {total}",
+  "@createPost_genderQuotaTotal": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "createPost_imageLabel": "图片（可选，最多 6 张）",
+  "createPost_imageUploadFailed": "第 {index} 张图片上传失败，请重试：{error}",
+  "@createPost_imageUploadFailed": {
+    "placeholders": {
+      "index": { "type": "int" },
+      "error": { "type": "String" }
+    }
+  },
+  "createPost_locationHint": "例如：星巴克臻选·太古汇店",
+  "createPost_locationRequired": "地点 *",
+  "createPost_networkUnavailable": "网络不可用，请检查网络后重试",
+  "createPost_permissionDenied": "权限不足",
+  "createPost_pickTimeLabel": "选择活动时间",
+  "createPost_publishButton": "发布",
+  "createPost_publishFailed": "发布失败：{error}",
+  "@createPost_publishFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "createPost_publishSuccess": "发布成功！",
+  "createPost_selectCategoryFirst": "请先选择分类",
+  "createPost_selectTitleFirst": "请先填写标题",
+  "createPost_slotsLabel": "人数",
+  "createPost_socialAnxietyFriendly": "社恐友好",
+  "createPost_socialAnxietySubtitle": "小群 / 不强迫自我介绍",
+  "createPost_timeRequired": "时间 *",
+  "createPost_title": "发布搭子",
+  "createPost_titleHint": "例如：周末去静安寺喝咖啡",
+  "createPost_titleRequired": "标题 *",
+  "createPost_totalSlots": "总人数",
+  "createPost_tokenExpired": "登录已过期，请重新登录",
+  "createPost_voiceButton": "语音",
+  "createPost_voiceDialogTitle": "语音发布",
+  "createPost_voiceDialogHint": "说一句话，AI 会自动提取分类 / 标题 / 时间 / 地点等。",
+  "createPost_voiceDialogPlaceholder": "例如：周六下午三点去外滩喝咖啡，找两个人一起",
+  "createPost_voiceDialogCancel": "取消",
+  "createPost_voiceDialogParse": "解析",
+  "createPost_voiceFilled": "已填充，请检查后发布",
+  "createPost_voiceParseFailed": "语音解析失败：{error}",
+  "@createPost_voiceParseFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "createPost_descGenerated": "已生成描述",
+  "createPost_descGenerateFailed": "生成失败：{error}",
+  "@createPost_descGenerateFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "discover_allCategories": "全部分类",
+  "discover_emptyHint": "试试调整筛选条件",
+  "discover_emptyTitle": "没找到匹配的局",
+  "discover_socialAnxietyFriendly": "社恐友好",
+  "discover_timeAll": "时间",
+  "discover_timeNoLimit": "不限",
+  "discover_timeThisMonth": "本月",
+  "discover_timeThisWeek": "本周",
+  "discover_timeToday": "今天",
+  "discover_nearby": "附近",
+  "discover_nearbyRadius": "{km}公里内",
+  "@discover_nearbyRadius": {
+    "placeholders": {
+      "km": { "type": "int" }
+    }
+  },
+  "discover_title": "发现",
+
+  "home_tabSwipe": "滑一滑",
+  "home_tabDiscover": "发现",
+  "home_tabMessages": "消息",
+  "home_tabProfile": "我的",
+
+  "login_agreementPrefix": "我已阅读并同意 ",
+  "login_agreementSeparator": " 和 ",
+  "login_emailHint": "请输���邮箱",
+  "login_emailInvalid": "请输入正确的邮箱",
+  "login_emailPasswordTab": "邮箱密码",
+  "login_emailTip": "需先用手机验证码注册，再在「设置→登录密码」中绑定邮箱",
+  "login_errorAccountDisabled": "该账号已被禁用",
+  "login_errorDefault": "登录失败：{error}",
+  "@login_errorDefault": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "login_errorInvalidEmail": "邮箱格式��正确",
+  "login_errorSendFailed": "发送失败：{error}",
+  "@login_errorSendFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "login_errorTooManyRequests": "尝试次数过多，请稍后再试",
+  "login_errorUserNotFound": "该邮箱未注册",
+  "login_errorWrongPassword": "邮箱或密码错误",
+  "login_getVerifyCode": "获取验证码",
+  "login_greeting": "你好",
+  "login_loginButton": "登录",
+  "login_mustAgree": "请先同意用户协议和隐私政策",
+  "login_passwordHint": "请输入密码",
+  "login_passwordTooShort": "密码至少 6 位",
+  "login_phoneHint": "��输入手机号",
+  "login_phoneInvalid": "请输入正确的手机号",
+  "login_phoneTab": "手机验证码",
+  "login_privacyPolicy": "隐私政策",
+  "login_selectCountry": "选择国家/地区",
+  "login_subtitle_email": "使用邮箱密码登录",
+  "login_subtitle_phone": "输入手机号登录 / 注册",
+  "login_termsOfService": "用户协议",
+
+  "messages_defaultChatTitle": "搭子群聊",
+  "messages_emptyHint": "滑一滑加入一个局吧~",
+  "messages_emptyTitle": "还没有群聊",
+  "messages_justNow": "刚刚",
+  "messages_minutesAgo": "{count}分钟前",
+  "@messages_minutesAgo": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "messages_daysAgo": "{count}天��",
+  "@messages_daysAgo": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "messages_peopleCount": "{count}人",
+  "@messages_peopleCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "messages_sayHiHint": "快去打个招呼吧~",
+  "messages_title": "消息",
+
+  "onboarding_complete": "完成",
+  "onboarding_nextStep": "下一步",
+
+  "onboarding_city_cnHot": "中国热门",
+  "onboarding_city_global": "Global",
+  "onboarding_city_locating": "正在定位...",
+  "onboarding_city_manualInput": "或手动输入",
+  "onboarding_city_searchHint": "输入城市名 / Enter city name",
+  "onboarding_city_subtitle": "我们会推荐同城的活动",
+  "onboarding_city_title": "你在哪座城市？",
+
+  "onboarding_gender_female": "女生",
+  "onboarding_gender_male": "男生",
+  "onboarding_gender_other": "不透露",
+  "onboarding_gender_subtitle": "这会影响搭子的男女配额匹配",
+  "onboarding_gender_title": "你的性别",
+
+  "onboarding_name_hint": "输入你的昵称",
+  "onboarding_name_subtitle": "让搭子一眼记住你",
+  "onboarding_name_title": "给自己起个名字",
+  "onboarding_name_uploadFailed": "上传失败：{error}",
+  "@onboarding_name_uploadFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "onboarding_tags_aiMatch": "至少选 1 个，AI 会帮你匹配同好",
+  "onboarding_tags_selectedCount": "已选 {count}",
+  "@onboarding_tags_selectedCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "onboarding_tags_shyMode": "胆小鬼模式",
+  "onboarding_tags_shyModeHint": "优先推荐社恐友好的活动",
+  "onboarding_tags_title": "选几个感兴趣的",
+
+  "onboarding_year_subtitle": "仅用于匹配同龄人，不会公开完整生日",
+  "onboarding_year_suffix": "年",
+  "onboarding_year_title": "你的出生年份",
+
+  "postDetail_activityCancelled": "活动已取消",
+  "postDetail_activityDescription": "活动介绍",
+  "postDetail_activityDone": "活动已结束",
+  "postDetail_activityExpired": "活动已过���",
+  "postDetail_applicationSent": "申请已发出，等待发布者回应",
+  "postDetail_applicationWaitlisted": "已加入候补名单",
+  "postDetail_applyNow": "立即申请",
+  "postDetail_cancelActivity": "取消活动",
+  "postDetail_cancelConfirmButton": "确定取消",
+  "postDetail_cancelConfirmContent": "取消后所有申请者会收到通知，确定取消吗？",
+  "postDetail_cancelRethink": "再想想",
+  "postDetail_cancelled": "活动已取消",
+  "postDetail_costLabel": "费用",
+  "postDetail_costWithDeposit": "{costType} · 押金 ¥{amount}",
+  "@postDetail_costWithDeposit": {
+    "placeholders": {
+      "costType": { "type": "String" },
+      "amount": { "type": "int" }
+    }
+  },
+  "postDetail_deleteConfirmButton": "删除",
+  "postDetail_deleteConfirmContent": "删除后不可恢复���确定吗？",
+  "postDetail_deletePost": "删除帖子",
+  "postDetail_deleted": "��子已删除",
+  "postDetail_depositBadge": "押金保障 ¥{amount}",
+  "@postDetail_depositBadge": {
+    "placeholders": {
+      "amount": { "type": "int" }
+    }
+  },
+  "postDetail_depositDescription": "参与者需缴纳押金，活动结束后自动退还，有效防止放鸽子",
+  "postDetail_joinWaitlist": "加入候补",
+  "postDetail_notFound": "帖子不存在或已删除",
+  "postDetail_participants": "参与者",
+  "postDetail_peopleCount": "{count}/{total} ���",
+  "@postDetail_peopleCount": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "postDetail_placeLabel": "地点",
+  "postDetail_reviewCount": "{count} 条评价",
+  "@postDetail_reviewCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "postDetail_slotsLabel": "人数",
+  "postDetail_statusApplied": "已申请 · {status}",
+  "@postDetail_statusApplied": {
+    "placeholders": {
+      "status": { "type": "String" }
+    }
+  },
+  "postDetail_timeLabel": "时间",
+  "postDetail_viewApplications": "查看申请列表",
+  "postDetail_withdrawApplication": "撤回",
+  "postDetail_withdrawConfirmContent": "确定撤回这条申请吗？",
+  "postDetail_withdrawConfirmTitle": "撤回申请",
+  "postDetail_withdrawn": "申请已撤回",
+
+  "postCard_defaultPublisher": "搭子用户",
+  "postCard_depositBadge": "押金保障",
+  "postCard_enrolled": "已报名 {count} / {total} 人",
+  "@postCard_enrolled": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+
+  "postStatus_cancelled": "已取消",
+  "postStatus_done": "已结束",
+  "postStatus_expired": "���过期",
+  "postStatus_full": "��满员",
+  "postStatus_open": "报名中",
+
+  "profile_badges": "勋章",
+  "profile_bio_empty": "这位搭子还没有写简介",
+  "profile_blacklist": "黑名单",
+  "profile_block": "拉黑",
+  "profile_blocked": "已拉黑",
+  "profile_editProfile": "编辑资料",
+  "profile_emergencyContacts": "紧急���系人",
+  "profile_genderFemale": "女",
+  "profile_genderMale": "男",
+  "profile_genderOther": "其他",
+  "profile_goLogin": "去登录",
+  "profile_interestTags": "兴趣标签",
+  "profile_interestTags_empty": "还没有设置兴趣标签",
+  "profile_joinedCount": "共参加过 {count} 次搭子活动",
+  "@profile_joinedCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "profile_language": "语言 / Language",
+  "profile_logout": "退出登录",
+  "profile_moreActions": "更多操作",
+  "profile_noApplications": "还没有申请过���子",
+  "profile_noJoined": "还没有参加过任何搭子",
+  "profile_noPosts": "还没有发布过搭子",
+  "profile_notLoggedIn": "尚未登录",
+  "profile_notificationSettings": "通知设置",
+  "profile_privacySettings": "隐���设置",
+  "profile_report": "举报",
+  "profile_reportFailed": "举报失败：{error}",
+  "@profile_reportFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "profile_reportReason_fake": "虚假信息",
+  "profile_reportReason_fraud": "欺诈诈骗",
+  "profile_reportReason_harassment": "骚扰行为",
+  "profile_reportReason_other": "其他",
+  "profile_reportReason_porn": "色情低俗",
+  "profile_reportRecorded": "已记录举报，我们会尽快处理",
+  "profile_reportTitle": "选择举报原因",
+  "profile_reviewCount": "{count} 条��价",
+  "@profile_reviewCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "profile_sesameBadge": "信用",
+  "profile_sesameBadgeA11y": "信用徽章：芝麻信用已授权",
+  "profile_setLoginPassword": "设置登录��码",
+  "profile_settings": "设置",
+  "profile_statsCompleted": "已完成",
+  "profile_statsForfeit": "爽约",
+  "profile_statsMedals": "勋章",
+  "profile_tabJoined": "参加过",
+  "profile_tabMyApplications_other": "TA 申请的",
+  "profile_tabMyApplications_self": "我申请的",
+  "profile_tabMyPosts_other": "TA 发布的",
+  "profile_tabMyPosts_self": "我发布的",
+  "profile_userAge": "{age} 岁",
+  "@profile_userAge": {
+    "placeholders": {
+      "age": { "type": "int" }
+    }
+  },
+  "profile_userNotExist": "用户不存在或已注销",
+
+  "recap_activity": "活动",
+  "recap_aiGenerating": "AI 正在为你生成回忆卡",
+  "recap_backToSquare": "回到广场",
+  "recap_duration": "时长",
+  "recap_durationMinutes": "{minutes} 分钟",
+  "@recap_durationMinutes": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "recap_generateButton": "生成回忆卡",
+  "recap_generateFailed": "生成失败：{error}",
+  "@recap_generateFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "recap_location": "地点",
+  "recap_matchNotExist": "搭子不存在",
+  "recap_participants": "人数",
+  "recap_participantsCount": "{count} 人",
+  "@recap_participantsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "recap_shareNotReady": "分享功能待接入",
+  "recap_title": "搭子回忆卡",
+  "recap_waitOrTrigger": "稍等片刻或手动触发",
+
+  "review_commentHint": "对这次搭子的感受、想说的话...",
+  "review_commentLabel": "留言",
+  "review_experienceQuestion": "这次搭子体验如何？",
+  "review_matchNotExist": "搭子不存在",
+  "review_negativeLabel": "需要改进",
+  "review_partner": "搭子",
+  "review_positiveLabel": "好的印象",
+  "review_submitButton": "提交评价",
+  "review_submitFailed": "提交失败：{error}",
+  "@review_submitFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "review_tag_attitude": "态度差",
+  "review_tag_caring": "会照顾人",
+  "review_tag_chatty": "聊得来",
+  "review_tag_ghosted": "放鸽子",
+  "review_tag_late": "迟到",
+  "review_tag_nice": "好相处",
+  "review_tag_passionate": "热情",
+  "review_tag_polite": "有礼貌",
+  "review_tag_punctual": "守时",
+  "review_tag_reliable": "靠谱",
+  "review_tag_unsocial": "不合群",
+  "review_tag_vibes": "氛围感",
+  "review_title": "写评价",
+
+  "share_button": "分享",
+  "share_copyLink": "复制链接",
+  "share_linkCopied": "链接已复制",
+  "share_postMessage": "来搭子 App 一起！",
+
+  "search_emptyHint": "试试「周末爬山」「看展」「撸猫」",
+  "search_emptyTitle": "找你想要的搭子",
+  "search_goHome": "返回首页",
+  "search_noResultsHint": "换个关键词试试",
+  "search_noResultsTitle": "没有找到相关搭子",
+  "search_placeholder": "搜搭子 试试「火锅」「爬山」",
+  "search_searchFailed": "搜索失败",
+
+  "setPassword_alreadyBound": "已绑定邮箱：{email}",
+  "@setPassword_alreadyBound": {
+    "placeholders": {
+      "email": { "type": "String" }
+    }
+  },
+  "setPassword_bindTitle": "绑定邮箱和密码",
+  "setPassword_boundSubtitle": "你已设置过邮箱密码登录，无需重复操作。",
+  "setPassword_boundTitle": "邮箱密码已设置",
+  "setPassword_confirmButton": "确认绑定",
+  "setPassword_confirmLabel": "确认密码",
+  "setPassword_confirmHint": "请再次输入密码",
+  "setPassword_emailHint": "请输入邮箱",
+  "setPassword_emailInvalid": "请输入正确的邮箱",
+  "setPassword_emailLabel": "邮箱",
+  "setPassword_errorAlreadyInUse": "该邮箱已被其他账号使用",
+  "setPassword_errorAlreadyLinked": "已绑定过邮箱密码，无需重复设置",
+  "setPassword_errorDefault": "设置失败：{error}",
+  "@setPassword_errorDefault": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "setPassword_errorInvalidEmail": "邮箱格式不正确",
+  "setPassword_errorRecentLogin": "安全验证过期，请重新登录后再设置",
+  "setPassword_errorWeakPassword": "密码强度不够，请使用更复杂的密码",
+  "setPassword_passwordConfirmMismatch": "两次密码不一致",
+  "setPassword_passwordHint": "请输入密码（至少 6 位）",
+  "setPassword_passwordLabel": "密码",
+  "setPassword_passwordTooShort": "密码至少 6 位",
+  "setPassword_screenTitle": "设置登录密码",
+  "setPassword_success": "设置成功！下次可用邮箱密码登录",
+  "setPassword_unboundSubtitle": "设置后，下次登录可直接使用邮箱和密码，无需手机验证码。",
+
+  "swipe_emptyHint": "下拉刷新或自己发一个局吧!",
+  "swipe_emptyTitle": "附近的局都看完了",
+  "swipe_joinFailed": "加入失败：{error}",
+  "@swipe_joinFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "swipe_labelJoin": "加入",
+  "swipe_labelSkip": "跳过",
+  "swipe_socialAnxietyFriendly": "社恐���好",
+  "swipe_waitlisted": "已加入候补名单，等待空位",
+  "swipe_applicationSent": "申请已发出，等待发布者确认",
+
+  "profile_verified": "已验证",
+  "profile_verifiedA11y": "身份已验证徽章",
+  "profile_verifyIdentity": "验证身份",
+  "profile_verifyBenefits": "完成身份验证后，你的个人资料将展示已验证徽章，提升信任度",
+  "profile_verifyStart": "开始验证",
+  "profile_verifyComingSoon": "功能即将上线",
+  "post_verifiedPublisher": "已验证发布者",
+
+  "discover_verifiedOnly": "已验证",
+
+  "location_locating": "定位中...",
+  "location_permissionDenied": "需要位置权限才能查看附近活动",
+  "location_useCurrentLocation": "使用当前位置",
+
+  "post_seriesActivity": "系列活动",
+  "post_seriesWeekOf": "第{current}/{total}周",
+  "@post_seriesWeekOf": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "post_seriesRecurrenceWeekly": "每周",
+  "post_seriesRecurrenceBiweekly": "每两周",
+  "post_seriesTotalWeeks": "持续{n}周",
+  "@post_seriesTotalWeeks": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "post_seriesToggle": "创建系列活动",
+  "post_seriesHint": "连续{n}周，{freq}同一时间组局",
+  "@post_seriesHint": {
+    "placeholders": {
+      "n": { "type": "int" },
+      "freq": { "type": "String" }
+    }
+  },
+  "post_viewFullSeries": "查看完整系列",
+  "post_seriesOtherWeeks": "其他期次",
+
+  "post_womenOnly": "仅限女性",
+  "post_womenOnlyBadge": "女性专属",
+  "post_womenOnlyToggle": "仅限女性参加",
+  "post_womenOnlyHint": "开启后，仅已验证的女性用户可以申请加入",
+  "post_womenOnlyRestricted": "该活动仅限已验证女性参加",
+
+  "discover_womenOnly": "女性专区",
+
+  "locale_system": "跟随系统",
+  "locale_zh": "中文",
+  "locale_en": "English",
+  "locale_ja": "日本語",
+  "locale_ko": "한국어",
+  "locale_es": "Español",
+  "locale_fr": "Français",
+  "locale_de": "Deutsch",
+
+  "safety_confirmTitle": "平安签到",
+  "safety_confirmDesc": "你参加的活动已结束但未签到，请确认你的安全状态",
+  "safety_confirmButton": "我很安全",
+  "safety_confirming": "确认中...",
+  "safety_confirmed": "平安签到成功",
+  "safety_confirmFailed": "确认失败，请重试",
+  "safety_bannerPending": "你有一条待确认的安全提醒",
+  "safety_bannerAction": "确认安全",
+
+  "post_participationFee": "参与费",
+  "post_participationFeeHint": "参与者需支付的费用（美元），平台抽成15%",
+  "post_participationFeeLabel": "参与费 ${fee}",
+  "@post_participationFeeLabel": {
+    "placeholders": {
+      "fee": { "type": "String" }
+    }
+  },
+  "post_freeActivity": "免费活动",
+  "post_paidActivity": "付费活动",
+  "post_payToJoin": "支付 ${amount} 参加",
+  "@post_payToJoin": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+
+  "circle_title": "圈子",
+  "circle_discover": "发现圈子",
+  "circle_create": "创建圈子",
+  "circle_createName": "圈子名称",
+  "circle_createNameHint": "给圈子起个名字",
+  "circle_createDesc": "圈子简介",
+  "circle_createDescHint": "介绍一下这个圈子",
+  "circle_createCategory": "分类",
+  "circle_createButton": "创建",
+  "circle_createSuccess": "圈子创建成功",
+  "circle_createFailed": "创建失败：{error}",
+  "@circle_createFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "circle_join": "加入圈子",
+  "circle_joined": "已加入",
+  "circle_leave": "退出圈子",
+  "circle_leaveConfirm": "确定退出这个圈子吗？",
+  "circle_owner": "圈主",
+  "circle_admin": "管理员",
+  "circle_memberCount": "{count} 人",
+  "@circle_memberCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "circle_postCount": "{count} 条动态",
+  "@circle_postCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "circle_moments": "动态",
+  "circle_members": "成员",
+  "circle_emptyMoments": "还没有动态，发一条吧",
+  "circle_emptyList": "还没有圈子，创建一个吧",
+  "circle_postMoment": "发动态",
+  "circle_momentHint": "分享你的想法...",
+  "circle_momentSent": "动态已发布",
+  "circle_momentFailed": "发布失败：{error}",
+  "@circle_momentFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "circle_joinFailed": "加入失败：{error}",
+  "@circle_joinFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "circle_leaveFailed": "退出失败：{error}",
+  "@circle_leaveFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "circle_ownerCannotLeave": "圈主不能退出圈子",
+
+  "trust_title": "信任分",
+  "trust_score": "{score} 分",
+  "@trust_score": {
+    "placeholders": {
+      "score": { "type": "int" }
+    }
+  },
+  "trust_levelRestricted": "受限",
+  "trust_levelNormal": "正常",
+  "trust_levelTrusted": "靠谱",
+  "trust_baseScore": "基础分",
+  "trust_meetupBonus": "活动加分",
+  "trust_ratingBonus": "评价加分",
+  "trust_ghostPenalty": "爽约扣分",
+  "trust_verifiedBonus": "验证加分",
+  "trust_restrictedHint": "信任分过低，部分功能受限。按时参加活动可提升信任分",
+  "trust_trustedBadge": "靠谱搭子",
+
+  "venue_title": "合作场地",
+  "venue_emptyList": "暂无合作场地",
+  "venue_checkins": "签到",
+  "venue_address": "地址",
+  "venue_perks": "搭子福利",
+  "venue_noPerks": "暂无福利",
+  "venue_checkinButton": "签到",
+  "venue_checkinSuccess": "签到成功！",
+  "venue_checkinFailed": "签到失败：{error}",
+  "@venue_checkinFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "venue_alreadyCheckedIn": "今天已签到过啦",
+  "venue_registerTitle": "入驻申请",
+  "venue_registerName": "场地名称",
+  "venue_registerNameHint": "如：星巴克臻选",
+  "venue_registerAddress": "地址",
+  "venue_registerAddressHint": "如：南京西路1266号",
+  "venue_registerCategory": "分类",
+  "venue_registerDesc": "描述",
+  "venue_registerDescHint": "简单介绍一下你的场地",
+  "venue_registerContact": "联系人",
+  "venue_registerPhone": "联系电话",
+  "venue_registerPerks": "搭子用户福利（选填）",
+  "venue_registerPerksHint": "如：搭子用户9折",
+  "venue_registerButton": "提交申请",
+  "venue_registerSuccess": "申请已提交，我们会尽快审核",
+  "venue_registerFailed": "提交失败：{error}",
+  "@venue_registerFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "venue_categoryCafe": "咖啡厅",
+  "venue_categoryGym": "健身",
+  "venue_categoryBar": "酒吧",
+  "venue_categoryRestaurant": "餐厅",
+  "venue_categoryOther": "其他",
+  "venue_totalCheckins": "{count}次签到",
+  "@venue_totalCheckins": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "voice_title": "语音房",
+  "voice_emptyList": "暂无进行中的语音房",
+  "voice_live": "直播中",
+  "voice_ended": "已结束",
+  "voice_participants": "{count}/{max}人",
+  "@voice_participants": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "max": { "type": "int" }
+    }
+  },
+  "voice_host": "主持人",
+  "voice_speaker": "发言者",
+  "voice_listener": "听众",
+  "voice_joinButton": "加入",
+  "voice_leaveButton": "离开",
+  "voice_endButton": "结束",
+  "voice_endConfirm": "确定要结束语音房吗？所有参与者将被移出",
+  "voice_joinFailed": "加入失败：{error}",
+  "@voice_joinFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "voice_leaveFailed": "离开失败：{error}",
+  "@voice_leaveFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "voice_roomFull": "语音房已满",
+  "voice_roomEnded": "语音房已结束",
+  "voice_createTitle": "创建语音房",
+  "voice_createName": "房间标题",
+  "voice_createNameHint": "如：周末电影闲聊",
+  "voice_createTopic": "话题（选填）",
+  "voice_createTopicHint": "聊什么？",
+  "voice_createMaxParticipants": "最大人数",
+  "voice_createButton": "开始",
+  "voice_createSuccess": "语音房已创建",
+  "voice_createFailed": "创建失败：{error}",
+  "@voice_createFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "voice_audioComingSoon": "实时语音功能即将上线"
+}

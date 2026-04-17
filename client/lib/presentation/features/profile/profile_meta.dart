@@ -11,6 +11,7 @@ class _MetaSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gt = GlassTheme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
       child: Column(
@@ -23,13 +24,13 @@ class _MetaSection extends StatelessWidget {
             children: [
               _InfoChip(
                 icon: _genderIcon(user.gender),
-                label: _genderLabel(user.gender),
+                label: _genderLabel(l10n, user.gender),
                 color: _genderColor(gt, user.gender),
               ),
               if (user.age != null)
                 _InfoChip(
                   icon: Icons.cake_outlined,
-                  label: '${user.age} 岁',
+                  label: l10n.profile_userAge(user.age!),
                   color: gt.colors.textSecondary,
                 ),
               if (user.city.isNotEmpty)
@@ -44,28 +45,25 @@ class _MetaSection extends StatelessWidget {
           // bio
           if (user.bio.trim().isEmpty)
             Text(
-              '这位搭子还没有写简介',
+              l10n.profile_bio_empty,
               style: TextStyle(color: gt.colors.textTertiary, fontSize: 13),
             )
           else
-            Semantics(
-              label: '个人简介',
-              child: Text(
-                user.bio,
-                style: TextStyle(
-                  color: gt.colors.textPrimary,
-                  fontSize: 14,
-                  height: 1.45,
-                ),
+            Text(
+              user.bio,
+              style: TextStyle(
+                color: gt.colors.textPrimary,
+                fontSize: 14,
+                height: 1.45,
               ),
             ),
           const SizedBox(height: 20),
           _StatsRow(user: user),
           const SizedBox(height: 20),
-          _SectionTitle('兴趣标签'),
+          _SectionTitle(l10n.profile_interestTags),
           const SizedBox(height: 10),
           if (user.tags.isEmpty)
-            Text('还没有设置兴趣标签',
+            Text(l10n.profile_interestTags_empty,
                 style: TextStyle(color: gt.colors.textTertiary, fontSize: 13))
           else
             Wrap(
@@ -98,10 +96,10 @@ class _MetaSection extends StatelessWidget {
         'female' => Icons.female,
         _ => Icons.transgender,
       };
-  static String _genderLabel(String g) => switch (g) {
-        'male' => '男',
-        'female' => '女',
-        _ => '其他',
+  static String _genderLabel(AppLocalizations l10n, String g) => switch (g) {
+        'male' => l10n.profile_genderMale,
+        'female' => l10n.profile_genderFemale,
+        _ => l10n.profile_genderOther,
       };
   static Color _genderColor(GlassThemeData gt, String g) => switch (g) {
         'male' => gt.colors.male,
@@ -151,6 +149,7 @@ class _StatsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gt = GlassTheme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14),
       decoration: BoxDecoration(
@@ -160,17 +159,26 @@ class _StatsRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _item(gt, '${user.totalMeetups}', '已完成'),
+          _item(gt, '${user.trustScore}', l10n.trust_title,
+              color: user.trustLevel == 'trusted'
+                  ? gt.colors.primary
+                  : user.trustLevel == 'restricted'
+                      ? gt.colors.accent
+                      : null),
           _divider(gt),
-          _item(gt, '${user.ghostCount}', '爽约'),
+          _item(gt, '${user.totalMeetups}', l10n.profile_statsCompleted),
           _divider(gt),
-          _item(gt, '${user.badges.length}', '勋章'),
+          _item(gt, '${user.ghostCount}', l10n.profile_statsForfeit),
+          _divider(gt),
+          _item(gt, '${user.badges.length}', l10n.profile_statsMedals),
         ],
       ),
     );
   }
 
-  Widget _item(GlassThemeData gt, String value, String label) => Expanded(
+  Widget _item(GlassThemeData gt, String value, String label,
+          {Color? color}) =>
+      Expanded(
         child: Semantics(
           label: '$label $value',
           child: Column(
@@ -179,7 +187,7 @@ class _StatsRow extends StatelessWidget {
                   style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
-                      color: gt.colors.textPrimary)),
+                      color: color ?? gt.colors.textPrimary)),
               const SizedBox(height: 2),
               Text(label,
                   style: TextStyle(

@@ -41,12 +41,26 @@ exports.applyToPost = functions
         throw new functions.https.HttpsError('already-exists', '你已经申请过这个搭子了');
       }
 
-      // 检查用户是否被限制（爽约3次或手动封禁）
-      // H-5 配套：isRestricted 字段不再由 antiGhosting 实时维护，改为此处判定 ghostCount 阈值
+      // 检查用户是否被限制（信任分 < 40 或手动封禁或旧版 ghostCount >= 3 兜底）
+      // T5-17: 优先使用 trustScore/trustLevel，兜底兼容旧逻辑
       const userDoc = await tx.get(db.collection('users').doc(uid));
       const user = userDoc.data();
-      if (user.isRestricted || (user.ghostCount || 0) >= 3) {
-        throw new functions.https.HttpsError('permission-denied', '你的账号因爽约次数过多已被限制');
+      const trustLevel = user.trustLevel || null;
+      const restricted = user.isRestricted
+        || trustLevel === 'restricted'
+        || (!trustLevel && (user.ghostCount || 0) >= 3);
+      if (restricted) {
+        throw new functions.https.HttpsError('permission-denied', '你的信任分过低，暂时无法申请');
+      }
+
+      // T5-09: 女性 Only 活动检查
+      if (post.womenOnly === true) {
+        if (user.gender !== 'female') {
+          throw new functions.https.HttpsError('permission-denied', '该活动仅限女性参加');
+        }
+        if ((user.verificationLevel || 1) < 2) {
+          throw new functions.https.HttpsError('permission-denied', '该活动要求完成身份验证');
+        }
       }
 
       // 统计当前已接受的人数

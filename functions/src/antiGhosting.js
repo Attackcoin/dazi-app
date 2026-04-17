@@ -14,6 +14,7 @@ const admin = require('firebase-admin');
 const { FieldValue, Timestamp } = require('firebase-admin/firestore');
 const { _generateRecapCard } = require('./ai');
 const { _sendNotification } = require('./notifications');
+const { _createSafetyAlert } = require('./safety');
 
 const db = admin.firestore();
 
@@ -161,6 +162,10 @@ exports.submitCheckin = functions
       await Promise.all(
         committedMatch.participants.map((p) => _sendReviewReadyNotification(p, matchId))
       );
+      // 延迟发送快速反馈提醒（给用户时间先完成评价流程）
+      await Promise.all(
+        committedMatch.participants.map((p) => _sendQuickFeedbackNotification(p, matchId))
+      );
       await Promise.all(committedMatch.participants.map((p) => _checkAndAwardBadges(p)));
     }
 
@@ -226,6 +231,18 @@ exports.onCheckinTimeout = functions
         ...ghosted.map(uid => _sendGhostedNotification(uid, doc.id)),
         ...attended.map(uid => _sendAttendedNotification(uid, doc.id)),
       ]);
+
+      // 向所有参与者发送快速反馈提醒（含被爽约和签到者）
+      await Promise.all(
+        match.participants.map(uid => _sendQuickFeedbackNotification(uid, doc.id))
+      );
+
+      // 为未签到用户创建安全提醒（有紧急联系人时触发）
+      await Promise.all(
+        ghosted.map(uid => _createSafetyAlert(doc.id, uid).catch(err =>
+          console.error(`安全提醒创建失败 matchId=${doc.id}, uid=${uid}:`, err)
+        ))
+      );
     }
 
     console.log(`签到超时处理：${expiredMatches.size} 个搭子`);
@@ -307,3 +324,55 @@ async function _sendAttendedNotification(uid, matchId) {
 async function _sendReviewReadyNotification(uid, matchId) {
   await _sendNotification(uid, '快来评价吧', '搭子活动已完成，给对方一个评价吧！', { type: 'review_ready', matchId });
 }
+async function _sendQuickFeedbackNotification(uid, matchId) {
+  await _sendNotification(uid, '见到搭子了吗？', '活动结束了，告诉我们你是否见到了对方 👋', { type: 'quick_feedback', matchId });
+}
+
+// ─────────────────────────────────────────────────────
+// 提交快速反馈：见到了 / 没见到（Hinge "We Met?" 模式）
+// 用于匹配算法训练信号，比完整评价更轻量
+// ─────────────────────────────────────────────────────
+exports.submitQuickFeedback = functions
+  .region('asia-southeast1')
+  .https.onCall(async (data, context) => {
+    if (!context.auth) throw new functions.https.HttpsError('unauthenticated', '请先登录');
+
+    const { matchId, feedback } = data;
+    const uid = context.auth.uid;
+
+    if (!matchId) throw new functions.https.HttpsError('invalid-argument', '缺少 matchId');
+    if (!['met', 'no_show'].includes(feedback)) {
+      throw new functions.https.HttpsError('invalid-argument', 'feedback 必须是 "met" 或 "no_show"');
+    }
+
+    return await db.runTransaction(async (tx) => {
+      const matchRef = db.collection('matches').doc(matchId);
+      const matchDoc = await tx.get(matchRef);
+
+      if (!matchDoc.exists) throw new functions.https.HttpsError('not-found', '搭子不存在');
+
+      const match = matchDoc.data();
+
+      if (!match.participants.includes(uid)) {
+        throw new functions.https.HttpsError('permission-denied', '你不是该搭子的参与者');
+      }
+
+      // 只允许在 completed 或 ghosted 状态下提交反馈
+      if (!['completed', 'ghosted', 'ghosted_all'].includes(match.status)) {
+        throw new functions.https.HttpsError('failed-precondition', '搭子尚未结束，无法提交反馈');
+      }
+
+      // 检查是否已提交过
+      const existing = match.quickFeedback || {};
+      if (existing[uid]) {
+        throw new functions.https.HttpsError('already-exists', '你已经提交过反馈了');
+      }
+
+      // 用点路径写入 quickFeedback.{uid}，只修改自己的 key
+      tx.update(matchRef, {
+        [`quickFeedback.${uid}`]: feedback,
+      });
+
+      return { success: true };
+    });
+  });

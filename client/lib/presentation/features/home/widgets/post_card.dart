@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/glass_theme.dart';
@@ -31,13 +32,15 @@ class _PostCardState extends State<PostCard> {
     final gt = GlassTheme.of(context);
     final post = widget.post;
 
+    final l10n = AppLocalizations.of(context)!;
     final semanticsLabel = [
       post.category,
+      if (post.depositAmount > 0) l10n.postCard_depositBadge,
       post.title,
-      _formatTime(post.time),
-      post.location?.name ?? '地点待定',
-      '已报名 ${post.acceptedCount} / ${post.totalSlots} 人',
-    ].join('，');
+      _formatTime(context, post.time),
+      post.location?.name ?? l10n.common_locationTbd,
+      l10n.postCard_enrolled(post.acceptedCount, post.totalSlots),
+    ].join(', ');
 
     return Semantics(
       button: true,
@@ -66,8 +69,34 @@ class _PostCardState extends State<PostCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Category tag
-                      PillTag(label: post.category),
+                      // Category tag + deposit badge
+                      Wrap(
+                        spacing: Spacing.space8,
+                        runSpacing: Spacing.space4,
+                        children: [
+                          PillTag(label: post.category),
+                          if (post.depositAmount > 0)
+                            PillTag(
+                              label: '\u{1F6E1}\uFE0F ${l10n.postCard_depositBadge}',
+                              color: gt.colors.success,
+                            ),
+                          if (post.participationFee > 0)
+                            PillTag(
+                              label: '\$${post.participationFee.toStringAsFixed(0)}',
+                              color: gt.colors.starColor,
+                            ),
+                          if (post.womenOnly)
+                            PillTag(
+                              label: '\u{2640}\uFE0F ${l10n.post_womenOnlyBadge}',
+                              color: gt.colors.accent,
+                            ),
+                          if (post.isSeries)
+                            PillTag(
+                              label: '\u{1F4C5} ${l10n.post_seriesWeekOf(post.seriesWeek ?? 1, post.seriesTotalWeeks ?? 1)}',
+                              color: gt.colors.info,
+                            ),
+                        ],
+                      ),
                       const SizedBox(height: Spacing.space8),
                       Text(
                         post.title,
@@ -80,12 +109,12 @@ class _PostCardState extends State<PostCard> {
                       ),
                       const SizedBox(height: 10),
                       _buildMetaRow(
-                          gt, Icons.schedule, _formatTime(post.time)),
+                          gt, Icons.schedule, _formatTime(context, post.time)),
                       const SizedBox(height: Spacing.space4),
                       _buildMetaRow(
                         gt,
                         Icons.location_on_outlined,
-                        post.location?.name ?? '地点待定',
+                        post.location?.name ?? l10n.common_locationTbd,
                       ),
                       const SizedBox(height: Spacing.space12),
                       _buildBottomRow(gt, post),
@@ -120,7 +149,7 @@ class _PostCardState extends State<PostCard> {
           const SizedBox(width: Spacing.space8),
           Expanded(
             child: Text(
-              post.publisherName ?? '搭子用户',
+              post.publisherName ?? AppLocalizations.of(context)!.postCard_defaultPublisher,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -159,6 +188,7 @@ class _PostCardState extends State<PostCard> {
         imageUrl: url,
         height: 120,
         fit: BoxFit.cover,
+        memCacheWidth: 400,
         placeholder: (_, __) => Container(
           height: 120,
           color: gt.colors.glassL1Bg,
@@ -212,9 +242,9 @@ class _PostCardState extends State<PostCard> {
     );
   }
 
-  String _formatTime(DateTime? time) {
-    if (time == null) return '时间待定';
-    return DateFormat('M月d日 HH:mm').format(time);
+  String _formatTime(BuildContext context, DateTime? time) {
+    if (time == null) return AppLocalizations.of(context)!.common_timeTbd;
+    return DateFormat('M/d HH:mm').format(time);
   }
 }
 

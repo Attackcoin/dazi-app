@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -90,7 +91,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           padding: const EdgeInsets.only(right: 16),
           child: GlassInput(
             controller: _controller,
-            hint: '搜搭子 试试"火锅""爬山"',
+            hint: AppLocalizations.of(context)!.search_placeholder,
             autofocus: false,
             onChanged: _onChanged,
             onSubmitted: _onSubmitted,
@@ -202,12 +203,12 @@ class _SearchEmptyHint extends StatelessWidget {
                 semanticLabel: '搜索提示'),
             const SizedBox(height: 12),
             Text(
-              '找你想要的搭子',
+              AppLocalizations.of(context)!.search_emptyTitle,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 4),
             Text(
-              '试试"周末爬山""看展""撸猫"',
+              AppLocalizations.of(context)!.search_emptyHint,
               style: TextStyle(color: gt.colors.textSecondary, fontSize: 13),
             ),
           ],
@@ -248,18 +249,18 @@ class _SearchNoResults extends StatelessWidget {
             const Text('🔍', style: TextStyle(fontSize: 56)),
             const SizedBox(height: 12),
             Text(
-              '没有找到相关搭子',
+              AppLocalizations.of(context)!.search_noResultsTitle,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 4),
             Text(
-              '换个关键词试试',
+              AppLocalizations.of(context)!.search_noResultsHint,
               style: TextStyle(color: gt.colors.textSecondary, fontSize: 13),
             ),
             const SizedBox(height: 12),
             TextButton(
               onPressed: () => context.go('/'),
-              child: const Text('返回首页'),
+              child: Text(AppLocalizations.of(context)!.search_goHome),
             ),
           ],
         ),
@@ -286,7 +287,7 @@ class _SearchError extends StatelessWidget {
             Icon(Icons.error_outline, size: 48, color: gt.colors.error),
             const SizedBox(height: 12),
             Text(
-              '搜索失败',
+              AppLocalizations.of(context)!.search_searchFailed,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 4),
@@ -302,7 +303,7 @@ class _SearchError extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('重试'),
+              label: Text(AppLocalizations.of(context)!.common_retry),
             ),
           ],
         ),

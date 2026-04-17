@@ -1,0 +1,15 @@
+{
+  "rules": {
+    "chats": {
+      "$postId": {
+        "messages": {
+          ".read": "auth != null",
+          ".write": "auth != null",
+          ".indexOn": ["timestamp"]
+        }
+      }
+    },
+    ".read": false,
+    ".write": false
+  }
+}

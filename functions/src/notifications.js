@@ -173,4 +173,44 @@ function _formatTime(timestamp) {
   });
 }
 
+// ─────────────────────────────────────────────────────
+// RTDB 新消息 → 更新所有相关 match 文档的消息摘要
+// 客户端只能更新发送者自己参与的 match（rules 限制），
+// 此触发器用 Admin SDK 补齐其他参与者的 match 文档。
+// ─────────────────────────────────────────────────────
+exports.onNewChatMessage = functions
+  .region('asia-southeast1')
+  .database.ref('chats/{postId}/messages/{messageId}')
+  .onCreate(async (snap, context) => {
+    const { postId } = context.params;
+    const message = snap.val();
+    if (!message) return;
+
+    const text = message.text || '';
+    const isImage = message.type === 'image';
+    const senderName = message.senderName || '';
+    let preview;
+    if (isImage) {
+      preview = senderName ? `${senderName}: [图片]` : '[图片]';
+    } else {
+      preview = text.length > 40 ? `${text.substring(0, 40)}…` : text;
+    }
+
+    const matchesSnap = await db.collection('matches')
+      .where('postId', '==', postId)
+      .get();
+
+    if (matchesSnap.empty) return;
+
+    const batch = db.batch();
+    const ts = Timestamp.fromMillis(message.timestamp || Date.now());
+    matchesSnap.docs.forEach(doc => {
+      batch.update(doc.ref, {
+        lastMessageAt: ts,
+        lastMessagePreview: preview,
+      });
+    });
+    await batch.commit();
+  });
+
 exports._sendNotification = sendNotification;

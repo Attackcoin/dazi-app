@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/glass_theme.dart';
@@ -34,6 +35,7 @@ class StepTags extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final gt = GlassTheme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final categories = ref.watch(categoriesProvider).valueOrNull ?? const [];
 
     return SingleChildScrollView(
@@ -42,13 +44,13 @@ class StepTags extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('选几个感兴趣的', style: Theme.of(context).textTheme.displayLarge),
+          Text(l10n.onboarding_tags_title, style: Theme.of(context).textTheme.displayLarge),
           const SizedBox(height: Spacing.space8),
           Row(
             children: [
               Expanded(
                 child: Text(
-                  '至少选 1 个，AI 会帮你匹配同好',
+                  l10n.onboarding_tags_aiMatch,
                   style: Theme.of(context)
                       .textTheme
                       .bodyLarge
@@ -57,7 +59,7 @@ class StepTags extends ConsumerWidget {
               ),
               if (selected.isNotEmpty)
                 Text(
-                  '已选 ${selected.length}',
+                  l10n.onboarding_tags_selectedCount(selected.length),
                   style: TextStyle(
                     color: gt.colors.primary,
                     fontWeight: FontWeight.w600,
@@ -82,7 +84,7 @@ class StepTags extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '胆小鬼模式',
+                        l10n.onboarding_tags_shyMode,
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
@@ -90,7 +92,7 @@ class StepTags extends ConsumerWidget {
                         ),
                       ),
                       Text(
-                        '优先推荐社恐友好的活动',
+                        l10n.onboarding_tags_shyModeHint,
                         style: TextStyle(
                           fontSize: 12,
                           color: gt.colors.textSecondary,

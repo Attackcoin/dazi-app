@@ -58,7 +58,11 @@ const _defaults = [
     tags: ['自习', '英语', '读书会', '编程', '考研'],
   ),
   CategoryConfig(
-    id: '游戏', label: '游戏', emoji: '🎮', sort: 5,
+    id: '演出', label: '演出', emoji: '🎤', sort: 5,
+    tags: ['演唱会', '音乐节', '展览', '体育赛事'],
+  ),
+  CategoryConfig(
+    id: '游戏', label: '游戏', emoji: '🎮', sort: 6,
     tags: ['桌游', '密室', '剧本杀', '电竞', '狼人杀'],
   ),
 ];

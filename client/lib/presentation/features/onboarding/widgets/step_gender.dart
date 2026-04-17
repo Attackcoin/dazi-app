@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../../../../core/theme/glass_theme.dart';
 import '../../../../core/theme/spacing.dart';
@@ -10,31 +11,31 @@ class StepGender extends StatelessWidget {
   final String? value;
   final ValueChanged<String> onChanged;
 
-  static const _options = [
-    ('male', '男生', Icons.male, 'male'),
-    ('female', '女生', Icons.female, 'female'),
-    ('other', '不透露', Icons.person, 'tertiary'),
-  ];
-
   @override
   Widget build(BuildContext context) {
     final gt = GlassTheme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final options = [
+      ('male', l10n.onboarding_gender_male, Icons.male, 'male'),
+      ('female', l10n.onboarding_gender_female, Icons.female, 'female'),
+      ('other', l10n.onboarding_gender_other, Icons.person, 'tertiary'),
+    ];
     return Padding(
       padding: const EdgeInsets.all(Spacing.space24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('你的性别', style: Theme.of(context).textTheme.displayLarge),
+          Text(l10n.onboarding_gender_title, style: Theme.of(context).textTheme.displayLarge),
           const SizedBox(height: Spacing.space8),
           Text(
-            '这会影响搭子的男女配额匹配',
+            l10n.onboarding_gender_subtitle,
             style: Theme.of(context)
                 .textTheme
                 .bodyLarge
                 ?.copyWith(color: gt.colors.textSecondary),
           ),
           const SizedBox(height: 40),
-          ..._options.map((o) => Padding(
+          ...options.map((o) => Padding(
                 padding: const EdgeInsets.only(bottom: Spacing.space12),
                 child: _GenderCard(
                   value: o.$1,

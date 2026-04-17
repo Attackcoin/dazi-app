@@ -12,10 +12,12 @@ service cloud.firestore {
       allow create: if request.auth.uid == userId
         && request.resource.data.keys().hasOnly([
           'name', 'bio', 'avatar', 'city', 'gender', 'age', 'birthYear', 'tags',
-          'fcmToken', 'sesameAuthorized', 'notificationSettings',
+          'fcmToken', 'fcmTokenUpdatedAt', 'sesameAuthorized',
+          'notificationsPrefs', 'privacyPrefs',
+          'emergencyContacts', 'blockedUsers',
           'rating', 'reviewCount', 'ratingSum', 'ratingCount',
           'ghostCount', 'totalMeetups', 'badges', 'isRestricted',
-          'createdAt', 'updatedAt'
+          'isSocialAnxietyFriendly', 'createdAt', 'updatedAt'
         ])
         && request.resource.data.rating == 5.0
         && request.resource.data.reviewCount == 0
@@ -29,7 +31,10 @@ service cloud.firestore {
       allow update: if request.auth.uid == userId
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'name', 'bio', 'avatar', 'city', 'gender', 'age', 'birthYear', 'tags',
-          'fcmToken', 'sesameAuthorized', 'notificationSettings'
+          'fcmToken', 'fcmTokenUpdatedAt', 'sesameAuthorized',
+          'notificationsPrefs', 'privacyPrefs',
+          'emergencyContacts', 'blockedUsers',
+          'isSocialAnxietyFriendly', 'updatedAt'
         ]);
     }
 
@@ -52,7 +57,9 @@ service cloud.firestore {
           'costType', 'depositAmount', 'images', 'tags',
           'isSocialAnxietyFriendly', 'isInstant', 'status',
           'acceptedGender', 'waitlist', 'createdAt', 'updatedAt', 'expiresAt',
-          'publisherName', 'publisherAvatar'
+          'publisherName', 'publisherAvatar',
+          'seriesId', 'recurrence', 'seriesWeek', 'seriesTotalWeeks',
+          'womenOnly', 'participationFee'
         ])
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.status == 'open'
@@ -99,7 +106,7 @@ service cloud.firestore {
       allow update: if request.auth != null
         && request.auth.uid in resource.data.participants
         && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['lastMessageAt', 'lastMessagePreview']);
+            .hasOnly(['lastMessageAt', 'lastMessagePreview', 'lastReadAt']);
       allow create, delete: if false;
     }
 
@@ -122,10 +129,66 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // ── safetyAlerts ────────────────────────────────────────
+    // 用户只能读自己的安全提醒；写入由 Cloud Functions 负责
+    match /safetyAlerts/{alertId} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow write: if false;
+    }
+
+    // ── circles ──────────────────────────────────────────
+    // 圈子主文档：登录用户可读，创建/更新/删除由 Cloud Functions 负责
+    match /circles/{circleId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+
+      // 成员子集合：登录用户可读成员列表，写入由 Cloud Functions 负责
+      match /members/{memberId} {
+        allow read: if request.auth != null;
+        allow write: if false;
+      }
+
+      // 动态子集合：圈子成员可读，写入由 Cloud Functions 负责
+      match /moments/{momentId} {
+        allow read: if request.auth != null;
+        allow write: if false;
+      }
+    }
+
+    // ── venues ───────────────────────────────────────────
+    // 合作场地：登录用户可读，写入由 Cloud Functions 负责
+    match /venues/{venueId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+
+      // 签到子集合：登录用户可读自己的签到，写入由 Cloud Functions 负责
+      match /checkins/{checkinId} {
+        allow read: if request.auth != null;
+        allow write: if false;
+      }
+    }
+
+    // ── voiceRooms ────────────────────────────────────────
+    // 语音房：登录用户可读，写入由 Cloud Functions 负责
+    match /voiceRooms/{roomId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
     // ── reports ───────────────────────────────────────────
     match /reports/{repId} {
       allow create: if request.auth != null;
       allow read, update, delete: if false;
+    }
+
+    // ── activityPayments ───────────────────────────────────
+    // 参与者或发布者可读自己的支付记录，写入由 Cloud Functions 负责
+    match /activityPayments/{payId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.uid ||
+        request.auth.uid == resource.data.publisherId
+      );
+      allow write: if false;
     }
 
     // ── monthlyReports ────────────────────────────────────

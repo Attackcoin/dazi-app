@@ -21,12 +21,12 @@ Flutter + Firebase + Algolia 的社交发帖类 App，当前处于 MVP 开发阶
 
 | 名称 | 角色 | 模型 | 核心能力 |
 |------|------|------|---------|
-| backend-dev | 后端开发 | sonnet | Firebase Functions (Node.js) + Firestore 规则 + Algolia 同步 + TDD |
-| frontend-dev | 前端开发 | sonnet | Flutter 客户端 + UI 组件 + 状态管理 + 路由 + TDD |
-| researcher | 探索/研究 | sonnet | Flutter/Firebase 最佳实践 + 代码搜索 + 网页调研（只读） |
-| e2e-tester | 联调测试 | sonnet | Flutter integration test + Playwright + Bug 记录 |
-| reviewer | 代码审查 | sonnet | 安全/质量/UI 品味/性能审查（只读源代码） |
-| custodian | 管家 | sonnet | 合规巡检 + 文档治理 + 模式→自动化 + 代码清理 |
+| backend-dev | 后端开发 | opus (4.6) | Firebase Functions (Node.js) + Firestore 规则 + Algolia 同步 + TDD |
+| frontend-dev | 前端开发 | opus (4.6) | Flutter 客户端 + UI 组件 + 状态管理 + 路由 + TDD |
+| researcher | 探索/研究 | opus (4.6) | Flutter/Firebase 最佳实践 + 代码搜索 + 网页调研（只读） |
+| e2e-tester | 联调测试 | opus (4.6) | Flutter integration test + Playwright + Bug 记录 |
+| reviewer | 代码审查 | opus (4.6) | 安全/质量/UI 品味/性能审查（只读源代码） |
+| custodian | 管家 | opus (4.6) | 合规巡检 + 文档治理 + 模式→自动化 + 代码清理 |
 
 ## 任务下发协议
 

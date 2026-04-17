@@ -92,6 +92,9 @@ class AuthRepository {
   }
 
   /// 确保登录用户在 Firestore 中有对应的资料文档。
+  ///
+  /// 字段严格按 firestore.rules `users create` 白名单写入，
+  /// 信誉/风控字段必须为默认值（rules 校验 == 0 / false）。
   Future<void> _ensureUserDocument(User user) async {
     final ref = _firestore.collection('users').doc(user.uid);
     final snap = await ref.get();
@@ -101,24 +104,64 @@ class AuthRepository {
         'avatar': user.photoURL ?? '',
         'bio': '',
         'gender': 'other',
-        'phone': user.phoneNumber ?? '',
+        'city': '',
         'tags': <String>[],
+        'sesameAuthorized': false,
         'rating': 5.0,
         'reviewCount': 0,
+        'ratingSum': 0,
+        'ratingCount': 0,
         'ghostCount': 0,
-        'isRestricted': false,
-        'verificationLevel': 1,
-        'sesameAuthorized': false,
         'totalMeetups': 0,
         'badges': <String>[],
-        'city': '',
-        'blockedUsers': <String>[],
+        'isRestricted': false,
         'createdAt': FieldValue.serverTimestamp(),
-        'lastActive': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
       });
     } else {
-      await ref.update({'lastActive': FieldValue.serverTimestamp()});
+      await ref.update({'updatedAt': FieldValue.serverTimestamp()});
     }
+  }
+
+  // ── Email/Password 认证 ──────────────────────────────
+
+  /// 用邮箱+密码登录（已绑定邮箱的用户后续登录使用）。
+  Future<UserCredential> signInWithEmailPassword(
+      String email, String password) async {
+    final result = await _auth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    if (result.user != null) {
+      await _ensureUserDocument(result.user!);
+    }
+    return result;
+  }
+
+  /// 将邮箱+密码绑定到当前已登录账号（手机注册后设置）。
+  Future<void> linkEmailPassword(String email, String password) async {
+    final user = _auth.currentUser;
+    if (user == null) throw StateError('请先登录');
+    final credential =
+        EmailAuthProvider.credential(email: email, password: password);
+    await user.linkWithCredential(credential);
+  }
+
+  /// 当前用户是否已绑定邮箱+密码登录方式。
+  bool get hasEmailProvider {
+    final user = _auth.currentUser;
+    if (user == null) return false;
+    return user.providerData.any((p) => p.providerId == 'password');
+  }
+
+  /// 当前用户已绑定的邮箱（如有）。
+  String? get linkedEmail {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+    for (final p in user.providerData) {
+      if (p.providerId == 'password') return p.email;
+    }
+    return null;
   }
 
   Future<void> signOut() => _auth.signOut();

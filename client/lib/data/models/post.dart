@@ -28,6 +28,20 @@ class Post {
   final String? publisherName;
   final String? publisherAvatar;
 
+  final bool womenOnly;
+
+  /// 参与费（美元），0 或 null 表示免费。区别于 depositAmount（可退押金）。
+  final double participationFee;
+
+  // 系列活动字段
+  final String? seriesId;
+  final String? recurrence;
+  final int? seriesWeek;
+  final int? seriesTotalWeeks;
+
+  /// 是否为系列活动帖子。
+  bool get isSeries => seriesId != null && seriesId!.isNotEmpty;
+
   const Post({
     required this.id,
     required this.userId,
@@ -52,6 +66,12 @@ class Post {
     required this.shareUrl,
     this.publisherName,
     this.publisherAvatar,
+    this.womenOnly = false,
+    this.participationFee = 0,
+    this.seriesId,
+    this.recurrence,
+    this.seriesWeek,
+    this.seriesTotalWeeks,
   });
 
   int get acceptedCount => acceptedGender.male + acceptedGender.female;
@@ -93,6 +113,12 @@ class Post {
       shareUrl: data['shareUrl'] as String?,
       publisherName: data['publisherName'] as String?,
       publisherAvatar: data['publisherAvatar'] as String?,
+      womenOnly: data['womenOnly'] as bool? ?? false,
+      participationFee: (data['participationFee'] as num?)?.toDouble() ?? 0,
+      seriesId: data['seriesId'] as String?,
+      recurrence: data['recurrence'] as String?,
+      seriesWeek: (data['seriesWeek'] as num?)?.toInt(),
+      seriesTotalWeeks: (data['seriesTotalWeeks'] as num?)?.toInt(),
     );
   }
 
@@ -156,6 +182,11 @@ class Post {
       shareUrl: null,
       publisherName: hit['publisherName'] as String?,
       publisherAvatar: null, // Algolia 不同步头像 URL
+      participationFee: (hit['participationFee'] as num?)?.toDouble() ?? 0,
+      seriesId: hit['seriesId'] as String?,
+      recurrence: hit['recurrence'] as String?,
+      seriesWeek: (hit['seriesWeek'] as num?)?.toInt(),
+      seriesTotalWeeks: (hit['seriesTotalWeeks'] as num?)?.toInt(),
     );
   }
 }

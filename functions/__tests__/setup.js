@@ -82,6 +82,9 @@ class FakeDocRef {
     this.id = parts[parts.length - 1];
     this.parent = { id: parts[parts.length - 2] };
   }
+  collection(subPath) {
+    return new FakeCollection(this.store, `${this.path}/${subPath}`);
+  }
   async get() {
     const data = this.store.docs.get(this.path);
     return {
@@ -322,18 +325,27 @@ firestoreFn.FieldValue = {
   arrayUnion: (...items) => makeSentinelArrayUnion(items),
   arrayRemove: (...items) => makeSentinelArrayRemove(items),
   serverTimestamp: () => makeSentinelServerTimestamp(),
+  vector: (arr) => arr, // Firestore vector field — store as plain array in tests
 };
 firestoreFn.Timestamp = {
-  now: () => ({
-    _s: Math.floor(Date.now() / 1000),
-    toDate: () => new Date(),
-    toMillis: () => Date.now(),
-  }),
-  fromDate: (d) => ({
-    _s: Math.floor(d.getTime() / 1000),
-    toDate: () => d,
-    toMillis: () => d.getTime(),
-  }),
+  now: () => {
+    const s = Math.floor(Date.now() / 1000);
+    return {
+      _s: s,
+      toDate: () => new Date(),
+      toMillis: () => Date.now(),
+      valueOf: () => s,
+    };
+  },
+  fromDate: (d) => {
+    const s = Math.floor(d.getTime() / 1000);
+    return {
+      _s: s,
+      toDate: () => d,
+      toMillis: () => d.getTime(),
+      valueOf: () => s,
+    };
+  },
 };
 
 const adminMock = {
@@ -386,7 +398,15 @@ function makeFunctionsMock() {
     HttpsError: FakeHttpsError,
   };
   const pubsubObj = { schedule: () => scheduleChain };
-  const regionChain = { https: httpsObj, pubsub: pubsubObj };
+  const firestoreObj = {
+    document: () => ({
+      onCreate: identity,
+      onUpdate: identity,
+      onWrite: identity,
+      onDelete: identity,
+    }),
+  };
+  const regionChain = { https: httpsObj, pubsub: pubsubObj, firestore: firestoreObj };
   return {
     region: () => regionChain,
     https: httpsObj,

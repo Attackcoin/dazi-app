@@ -1,4 +1,7 @@
 {
+  "database": {
+    "rules": "database.rules.json"
+  },
   "firestore": {
     "database": "(default)",
     "location": "asia-southeast1",
@@ -23,6 +26,10 @@
   ],
   "hosting": {
     "public": "client/build/web",
+    "predeploy": [
+      "node scripts/generate_landing_pages.js",
+      "cp -r public/* client/build/web/"
+    ],
     "ignore": [
       "firebase.json",
       "**/.*",

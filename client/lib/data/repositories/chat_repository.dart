@@ -50,7 +50,7 @@ class ChatRepository {
     });
   }
 
-  /// 发送一条文字消息。同时更新 posts/{chatId} 的 lastMessage 字段。
+  /// 发送一条文字消息。同时更新该群聊关联的 match 文档的消息摘要。
   Future<void> sendText({
     required String chatId,
     required String senderId,
@@ -75,15 +75,19 @@ class ChatRepository {
 
     await _messagesRef(chatId).push().set(msg.toMap());
 
-    // 同步更新 post 的最后消息字段（消息列表展示用）。
+    // 同步更新 match 文档的消息摘要（消息列表展示用）。
+    // chatId == postId，查发送者参与的 match 文档并更新。
+    // 其他参与者的 match 由 Cloud Function onNewChatMessage 触发器统一更新。
     final preview = senderName != null
         ? '$senderName: ${trimmed.length > 30 ? '${trimmed.substring(0, 30)}…' : trimmed}'
         : trimmed.length > 40 ? '${trimmed.substring(0, 40)}…' : trimmed;
 
-    await _firestore.collection('posts').doc(chatId).set({
-      'lastMessageAt': Timestamp.fromMillisecondsSinceEpoch(now),
-      'lastMessagePreview': preview,
-    }, SetOptions(merge: true));
+    await _updateMatchPreviews(
+      postId: chatId,
+      senderId: senderId,
+      now: now,
+      preview: preview,
+    );
   }
 
   /// 发送一条图片消息。
@@ -109,28 +113,67 @@ class ChatRepository {
     await _messagesRef(chatId).push().set(msg.toMap());
 
     final preview = senderName != null ? '$senderName: [图片]' : '[图片]';
-    await _firestore.collection('posts').doc(chatId).set({
-      'lastMessageAt': Timestamp.fromMillisecondsSinceEpoch(now),
-      'lastMessagePreview': preview,
-    }, SetOptions(merge: true));
+    await _updateMatchPreviews(
+      postId: chatId,
+      senderId: senderId,
+      now: now,
+      preview: preview,
+    );
+  }
+
+  /// 更新发送者参与的 match 文档的消息摘要。
+  /// Firestore rules 允许参与者更新 lastMessageAt / lastMessagePreview。
+  Future<void> _updateMatchPreviews({
+    required String postId,
+    required String senderId,
+    required int now,
+    required String preview,
+  }) async {
+    final matchesSnap = await _firestore
+        .collection('matches')
+        .where('postId', isEqualTo: postId)
+        .where('participants', arrayContains: senderId)
+        .get();
+    for (final doc in matchesSnap.docs) {
+      await doc.reference.update({
+        'lastMessageAt': Timestamp.fromMillisecondsSinceEpoch(now),
+        'lastMessagePreview': preview,
+      });
+    }
   }
 
   /// 标记当前用户已读最新消息。
+  /// 同时更新 Firestore match 文档的 lastReadAt.{uid}，用于驱动未读 badge。
   Future<void> markRead({
     required String chatId,
     required String uid,
   }) async {
+    // 1) RTDB：标记消息 readBy
     final snap = await _messagesRef(chatId).orderByChild('timestamp').limitToLast(20).get();
     final raw = snap.value;
-    if (raw is! Map) return;
-    final updates = <String, Object?>{};
-    raw.forEach((key, value) {
-      if (value is Map) {
-        updates['$key/readBy/$uid'] = true;
+    if (raw is Map) {
+      final updates = <String, Object?>{};
+      raw.forEach((key, value) {
+        if (value is Map) {
+          updates['$key/readBy/$uid'] = true;
+        }
+      });
+      if (updates.isNotEmpty) {
+        await _messagesRef(chatId).update(updates);
       }
-    });
-    if (updates.isNotEmpty) {
-      await _messagesRef(chatId).update(updates);
+    }
+
+    // 2) Firestore：更新 match.lastReadAt.{uid}
+    final matchesSnap = await _firestore
+        .collection('matches')
+        .where('postId', isEqualTo: chatId)
+        .where('participants', arrayContains: uid)
+        .limit(1)
+        .get();
+    for (final doc in matchesSnap.docs) {
+      await doc.reference.update({
+        'lastReadAt.$uid': FieldValue.serverTimestamp(),
+      });
     }
   }
 }

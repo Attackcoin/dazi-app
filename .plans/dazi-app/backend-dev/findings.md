@@ -11,6 +11,10 @@
 | [task-security-fixes/](task-security-fixes/) | 完成 | 修复 reviewer [BLOCK] 的 9 个 CRITICAL/HIGH/MEDIUM 安全问题 |
 | [task-t1-security-fixes/](task-t1-security-fixes/) | 完成 2026-04-14 | T1 全面审查后 7 HIGH + 4 MED 并发/鉴权修复 + Jest 基建；reviewer [OK] |
 | [task-v2-migration-eval/](task-v2-migration-eval/) | 完成 2026-04-14 | M-8 v1→v2 迁移评估 — 推荐 DEFERRED，触发条件见第 6 节 |
+| T5-03 快速反馈（内联） | 完成 2026-04-16 | submitQuickFeedback onCall + match.dart quickFeedback 字段 + 10 条测试 |
+| [task-identity-verification/](task-identity-verification/) | 完成 2026-04-17 | T5-01 Stripe Identity 身份验证：startIdentityVerification onCall + stripeIdentityWebhook onRequest + 6 条测试 |
+| [task-series-posts/](task-series-posts/) | 完成 2026-04-17 | T5-06 系列活动：createSeriesPosts onCall + rules 白名单 + 复合索引 + 11 条测试 |
+| [task-safety-companion/](task-safety-companion/) | 完成 2026-04-17 | T5-12 安全伴侣：confirmSafety + escalateSafetyAlert + safetyAlerts rules + 14 条测试 |
 
 ---
 

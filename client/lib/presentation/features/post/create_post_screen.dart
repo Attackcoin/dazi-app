@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/dazi_colors.dart';
@@ -21,6 +22,7 @@ import '../../../data/repositories/application_repository.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/category_repository.dart';
 import '../../../data/repositories/post_create_repository.dart';
+import '../../../data/services/location_service.dart';
 
 part 'create_post_quota.dart';
 
@@ -44,6 +46,12 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   bool _publishing = false;
   bool _aiLoading = false;
   bool _genderQuotaEnabled = false;
+  bool _locating = false;
+
+  // 系列活动
+  bool _isSeriesMode = false;
+  String _seriesRecurrence = 'weekly'; // "weekly" | "biweekly"
+  int _seriesTotalWeeks = 4;
 
   List<CategoryConfig> _categories = const [];
 
@@ -100,6 +108,35 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     });
   }
 
+  /// T5-04 GeoSearch: 使用 geolocator 获取当前位置，自动填充 locationName + lat/lng + city。
+  Future<void> _useCurrentLocation() async {
+    if (_locating) return;
+    setState(() => _locating = true);
+    try {
+      final locService = ref.read(locationServiceProvider);
+      final result = await locService.getCurrentCity();
+      if (!mounted) return;
+      if (result == null) {
+        final l10n = AppLocalizations.of(context)!;
+        _showSnack(l10n.location_permissionDenied);
+        return;
+      }
+      setState(() {
+        _locationController.text = result.city;
+        _draft.locationName = result.city;
+        _draft.city = result.city;
+        _draft.locationLat = result.lat;
+        _draft.locationLng = result.lng;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
+      _showSnack(l10n.location_permissionDenied);
+    } finally {
+      if (mounted) setState(() => _locating = false);
+    }
+  }
+
   Future<void> _publish() async {
     // debounce：防止按钮短时间内重复触发
     if (_publishing) return;
@@ -133,49 +170,68 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
           _draft.imageUrls = await Future.wait(uploads, eagerError: true);
         } on _ImageUploadException catch (e) {
           if (!mounted) return;
-          _showSnack('第 ${e.index} 张图片上传失败，请重试：${_friendlyError(e.cause)}');
+          final l10n = AppLocalizations.of(context)!;
+          _showSnack(l10n.createPost_imageUploadFailed(e.index, _friendlyError(e.cause)));
           return;
         }
       }
 
-      final postId = await repo.publish(_draft);
+      String postId;
+      if (_isSeriesMode) {
+        final result = await repo.createSeries(
+          draft: _draft,
+          recurrence: _seriesRecurrence,
+          totalWeeks: _seriesTotalWeeks,
+        );
+        final postIds = (result['postIds'] as List?)?.cast<String>() ?? [];
+        postId = postIds.isNotEmpty ? postIds.first : '';
+      } else {
+        postId = await repo.publish(_draft);
+      }
       if (!mounted) return;
-      await CelebrationOverlay.showJoinSuccess(context, title: '发布成功！');
+      final l10nSuccess = AppLocalizations.of(context)!;
+      await CelebrationOverlay.showJoinSuccess(context, title: l10nSuccess.createPost_publishSuccess);
       if (!mounted) return;
-      context.pushReplacement('/post/$postId');
+      if (postId.isNotEmpty) {
+        context.pushReplacement('/post/$postId');
+      } else {
+        context.pop();
+      }
     } on FirebaseException catch (e) {
       if (!mounted) return;
-      _showSnack('发布失败：${_friendlyFirebaseError(e)}');
+      final l10nErr = AppLocalizations.of(context)!;
+      _showSnack(l10nErr.createPost_publishFailed(_friendlyFirebaseError(e)));
     } catch (e) {
       if (!mounted) return;
-      _showSnack('发布失败：${_friendlyError(e)}');
+      final l10nErr = AppLocalizations.of(context)!;
+      _showSnack(l10nErr.createPost_publishFailed(_friendlyError(e)));
     } finally {
       if (mounted) setState(() => _publishing = false);
     }
   }
 
-  /// 把 FirebaseException 转为用户友好的中文提示。
   String _friendlyFirebaseError(FirebaseException e) {
+    final l10n = AppLocalizations.of(context)!;
     switch (e.code) {
       case 'unavailable':
       case 'network-request-failed':
       case 'deadline-exceeded':
-        return '网络不可用，请检查网络后重试';
+        return l10n.createPost_networkUnavailable;
       case 'permission-denied':
-        return '权限不足';
+        return l10n.createPost_permissionDenied;
       case 'unauthenticated':
-        return '登录已过期，请重新登录';
+        return l10n.createPost_tokenExpired;
       default:
         return e.message ?? e.code;
     }
   }
 
-  /// 通用错误友好化。
   String _friendlyError(Object e) {
     if (e is FirebaseException) return _friendlyFirebaseError(e);
     final msg = e.toString();
     if (msg.contains('SocketException') || msg.contains('Network is unreachable')) {
-      return '网络不可用，请检查网络';
+      final l10n = AppLocalizations.of(context)!;
+      return l10n.createPost_networkUnavailable;
     }
     return msg;
   }
@@ -187,17 +243,18 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   /// 弹出语音文字对话框 —— 用户把想说的话输入后，调用 Cloud Function 解析成字段。
   /// TODO: 后续接入平台 STT（speech_to_text），这里先用手动文字输入降级。
   Future<void> _showVoiceDialog() async {
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController();
     final text = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('语音发布'),
+        title: Text(l10n.createPost_voiceDialogTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '说一句话，AI 会自动提取分类 / 标题 / 时间 / 地点等。',
+              l10n.createPost_voiceDialogHint,
               style: TextStyle(
                 fontSize: 12,
                 color: GlassTheme.of(ctx).colors.textSecondary,
@@ -208,8 +265,8 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
               controller: controller,
               autofocus: true,
               maxLines: 3,
-              decoration: const InputDecoration(
-                hintText: '例如：周六下午三点去外滩喝咖啡，找两个人一起',
+              decoration: InputDecoration(
+                hintText: l10n.createPost_voiceDialogPlaceholder,
               ),
             ),
           ],
@@ -217,12 +274,12 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('取消'),
+            child: Text(l10n.createPost_voiceDialogCancel),
           ),
           ElevatedButton(
             onPressed: () =>
                 Navigator.of(ctx).pop(controller.text.trim()),
-            child: const Text('解析'),
+            child: Text(l10n.createPost_voiceDialogParse),
           ),
         ],
       ),
@@ -244,9 +301,11 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
       }
       final data = Map<String, dynamic>.from(payload['data'] as Map);
       _applyVoiceResult(data);
-      _showSnack('已填充，请检查后发布');
+      final l10n = AppLocalizations.of(context)!;
+      _showSnack(l10n.createPost_voiceFilled);
     } catch (e) {
-      _showSnack('语音解析失败：$e');
+      final l10n = AppLocalizations.of(context)!;
+      _showSnack(l10n.createPost_voiceParseFailed('$e'));
     } finally {
       if (mounted) setState(() => _aiLoading = false);
     }
@@ -293,13 +352,14 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   }
 
   Future<void> _generateDescription() async {
+    final l10n = AppLocalizations.of(context)!;
     final title = _titleController.text.trim();
     if (title.isEmpty) {
-      _showSnack('请先填写标题');
+      _showSnack(l10n.createPost_selectTitleFirst);
       return;
     }
     if (_draft.category.isEmpty) {
-      _showSnack('请先选择分类');
+      _showSnack(l10n.createPost_selectCategoryFirst);
       return;
     }
     setState(() => _aiLoading = true);
@@ -318,10 +378,10 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
           _descController.text = desc;
           _draft.description = desc;
         });
-        _showSnack('已生成描述');
+        _showSnack(l10n.createPost_descGenerated);
       }
     } catch (e) {
-      _showSnack('生成失败：$e');
+      _showSnack(l10n.createPost_descGenerateFailed('$e'));
     } finally {
       if (mounted) setState(() => _aiLoading = false);
     }
@@ -335,11 +395,12 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     // 且 UI 不会因为流后续 emit 而重建。
     _categories = ref.watch(categoriesProvider).valueOrNull ?? const [];
 
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: colors.base,
       appBar: AppBar(
         backgroundColor: colors.surface,
-        title: const Text('发布搭子'),
+        title: Text(l10n.createPost_title),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => context.pop(),
@@ -354,7 +415,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.mic, size: 18),
-            label: const Text('语音'),
+            label: Text(l10n.createPost_voiceButton),
           ),
         ],
       ),
@@ -364,35 +425,50 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _sectionLabel('分类 *', colors),
+              _sectionLabel(l10n.createPost_categoryRequired, colors),
               _buildCategoryPicker(colors),
-              _sectionLabel('标题 *', colors),
+              _sectionLabel(l10n.createPost_titleRequired, colors),
               GlassInput(
                 controller: _titleController,
-                hint: '例如：周末去静安寺喝咖啡',
+                hint: l10n.createPost_titleHint,
               ),
-              _sectionLabel('图片（可选，最多 6 张）', colors),
+              _sectionLabel(l10n.createPost_imageLabel, colors),
               _buildImagePicker(colors),
-              _sectionLabel('时间 *', colors),
+              _sectionLabel(l10n.createPost_timeRequired, colors),
               _buildTimePicker(colors),
-              _sectionLabel('地点 *', colors),
+              const SizedBox(height: 8),
+              _buildSeriesSection(colors),
+              _sectionLabel(l10n.createPost_locationRequired, colors),
               GlassInput(
                 controller: _locationController,
-                hint: '例如：星巴克臻选·太古汇店',
+                hint: l10n.createPost_locationHint,
                 prefix: Icon(Icons.location_on_outlined, color: colors.textSecondary),
+                suffix: _locating
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : IconButton(
+                        icon: Icon(Icons.my_location, color: colors.primary, size: 20),
+                        tooltip: l10n.location_useCurrentLocation,
+                        onPressed: _useCurrentLocation,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
               ),
-              _sectionLabel('人数', colors),
+              _sectionLabel(l10n.createPost_slotsLabel, colors),
               _buildSlotsPicker(colors),
               const SizedBox(height: 10),
               _buildGenderQuotaSection(),
-              _sectionLabel('费用方式', colors),
+              _sectionLabel(l10n.createPost_costTypeLabel, colors),
               _buildCostTypePicker(colors),
               Padding(
                 padding: const EdgeInsets.only(top: 20, bottom: 10),
                 child: Row(
                   children: [
                     Text(
-                      '描述（可选）',
+                      l10n.createPost_descOptional,
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -409,8 +485,8 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                       icon: const Icon(Icons.auto_awesome, size: 16),
-                      label: const Text('AI 帮写',
-                          style: TextStyle(fontSize: 12)),
+                      label: Text(l10n.createPost_aiGenerateDesc,
+                          style: const TextStyle(fontSize: 12)),
                     ),
                   ],
                 ),
@@ -418,10 +494,12 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
               GlassInput(
                 controller: _descController,
                 maxLines: 4,
-                hint: '介绍一下活动，吸引同好报名',
+                hint: l10n.createPost_descHint,
               ),
               const SizedBox(height: 8),
               _buildSocialAnxietyToggle(colors),
+              const SizedBox(height: 8),
+              _buildWomenOnlyToggle(colors),
             ],
           ),
         ),
@@ -437,7 +515,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         child: SafeArea(
           top: false,
           child: GlassButton(
-            label: '发布',
+            label: l10n.createPost_publishButton,
             variant: GlassButtonVariant.primary,
             expand: true,
             isLoading: _publishing,
@@ -505,7 +583,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                       Icon(Icons.add, color: colors.textTertiary),
                       const SizedBox(height: 4),
                       Text(
-                        '添加',
+                        AppLocalizations.of(context)!.createPost_addImage,
                         style: TextStyle(
                           fontSize: 11,
                           color: colors.textTertiary,
@@ -559,6 +637,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
 
   Widget _buildTimePicker(DaziColorScheme colors) {
     final hasTime = _draft.time != null;
+    final l10n = AppLocalizations.of(context)!;
     return GlassCard(
       level: 1,
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
@@ -570,7 +649,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
           Text(
             hasTime
                 ? DateFormat('M月d日 HH:mm').format(_draft.time!)
-                : '选择活动时间',
+                : l10n.createPost_pickTimeLabel,
             style: TextStyle(
               fontSize: 15,
               color: hasTime
@@ -591,7 +670,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
       child: Row(
         children: [
-          Text('总人数', style: TextStyle(fontSize: 14, color: colors.textPrimary)),
+          Text(AppLocalizations.of(context)!.createPost_totalSlots, style: TextStyle(fontSize: 14, color: colors.textPrimary)),
           const Spacer(),
           IconButton(
             icon: const Icon(Icons.remove_circle_outline),
@@ -621,13 +700,20 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   }
 
   Widget _buildCostTypePicker(DaziColorScheme colors) {
+    final l10n = AppLocalizations.of(context)!;
+    String costLabel(CostType ct) => switch (ct) {
+      CostType.aa => l10n.costType_aa,
+      CostType.host => l10n.costType_host,
+      CostType.self => l10n.costType_self,
+      CostType.tbd => l10n.costType_tbd,
+    };
     return Wrap(
       spacing: 10,
       runSpacing: 10,
       children: CostType.values.map((t) {
         final selected = _draft.costType == t;
         return PillTag(
-          label: t.label,
+          label: costLabel(t),
           selected: selected,
           onTap: () => setState(() => _draft.costType = t),
         );
@@ -636,6 +722,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   }
 
   Widget _buildSocialAnxietyToggle(DaziColorScheme colors) {
+    final l10n = AppLocalizations.of(context)!;
     return GlassCard(
       level: 1,
       padding: const EdgeInsets.all(16),
@@ -648,7 +735,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '社恐友好',
+                  l10n.createPost_socialAnxietyFriendly,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -656,7 +743,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                   ),
                 ),
                 Text(
-                  '小群 / 不强迫自我介绍',
+                  l10n.createPost_socialAnxietySubtitle,
                   style: TextStyle(
                     fontSize: 11,
                     color: colors.textSecondary,
@@ -671,6 +758,165 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                 setState(() => _draft.isSocialAnxietyFriendly = v),
             activeColor: colors.primary,
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWomenOnlyToggle(DaziColorScheme colors) {
+    final l10n = AppLocalizations.of(context)!;
+    return GlassCard(
+      level: 1,
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.female, size: 20, color: colors.accent),
+                    const SizedBox(width: 6),
+                    Text(
+                      l10n.post_womenOnlyToggle,
+                      style: TextStyle(
+                        color: colors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  l10n.post_womenOnlyHint,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: _draft.womenOnly,
+            onChanged: (v) => setState(() => _draft.womenOnly = v),
+            activeColor: colors.accent,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSeriesSection(DaziColorScheme colors) {
+    final l10n = AppLocalizations.of(context)!;
+    return GlassCard(
+      level: 1,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('\u{1F4C5}', style: TextStyle(fontSize: 22)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.post_seriesToggle,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      l10n.post_seriesHint(
+                        _seriesTotalWeeks,
+                        _seriesRecurrence == 'weekly'
+                            ? l10n.post_seriesRecurrenceWeekly
+                            : l10n.post_seriesRecurrenceBiweekly,
+                      ),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: _isSeriesMode,
+                onChanged: (v) => setState(() => _isSeriesMode = v),
+                activeColor: colors.primary,
+              ),
+            ],
+          ),
+          if (_isSeriesMode) ...[
+            const SizedBox(height: 16),
+            // 频率选择
+            Text(
+              l10n.post_seriesRecurrenceWeekly,
+              style: TextStyle(fontSize: 12, color: colors.textSecondary),
+            ),
+            const SizedBox(height: 8),
+            SegmentedButton<String>(
+              segments: [
+                ButtonSegment(
+                  value: 'weekly',
+                  label: Text(l10n.post_seriesRecurrenceWeekly),
+                ),
+                ButtonSegment(
+                  value: 'biweekly',
+                  label: Text(l10n.post_seriesRecurrenceBiweekly),
+                ),
+              ],
+              selected: {_seriesRecurrence},
+              onSelectionChanged: (v) =>
+                  setState(() => _seriesRecurrence = v.first),
+              style: SegmentedButton.styleFrom(
+                selectedBackgroundColor: colors.primary.withValues(alpha: 0.15),
+                selectedForegroundColor: colors.primary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            // 总周数
+            Row(
+              children: [
+                Text(
+                  l10n.post_seriesTotalWeeks(_seriesTotalWeeks),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: colors.textPrimary,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.remove_circle_outline),
+                  color: colors.primary,
+                  onPressed: _seriesTotalWeeks > 2
+                      ? () => setState(() => _seriesTotalWeeks--)
+                      : null,
+                ),
+                Text(
+                  '$_seriesTotalWeeks',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: colors.textPrimary,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add_circle_outline),
+                  color: colors.primary,
+                  onPressed: _seriesTotalWeeks < 8
+                      ? () => setState(() => _seriesTotalWeeks++)
+                      : null,
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

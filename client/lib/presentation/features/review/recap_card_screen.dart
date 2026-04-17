@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -34,7 +35,7 @@ class _RecapCardScreenState extends ConsumerState<RecapCardScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('生成失败：$e')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.recap_generateFailed('$e'))),
       );
     } finally {
       if (mounted) setState(() => _regenerating = false);
@@ -60,7 +61,7 @@ class _RecapCardScreenState extends ConsumerState<RecapCardScreen> {
               icon: const Icon(Icons.ios_share),
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('分享功能待接入')),
+                  SnackBar(content: Text(AppLocalizations.of(context)!.recap_shareNotReady)),
                 );
               },
             ),
@@ -79,7 +80,7 @@ class _RecapCardScreenState extends ConsumerState<RecapCardScreen> {
             data: (match) {
               if (match == null) {
                 return Center(
-                  child: Text('搭子不存在',
+                  child: Text(AppLocalizations.of(context)!.recap_matchNotExist,
                       style: TextStyle(color: gt.colors.textPrimary)),
                 );
               }
@@ -112,12 +113,13 @@ class _RecapContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gt = GlassTheme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(24, 72, 24, 32),
       child: Column(
         children: [
           _TypewriterTitle(
-            text: '✨ 搭子回忆卡',
+            text: '✨ ${l10n.recap_title}',
             style: TextStyle(
               color: gt.colors.textPrimary,
               fontSize: 14,
@@ -147,23 +149,23 @@ class _RecapContent extends StatelessWidget {
                 const SizedBox(height: 24),
                 Divider(color: gt.colors.glassL1Border),
                 const SizedBox(height: 20),
-                _recapRow(gt, Icons.local_activity_outlined, '活动', recap.activity),
+                _recapRow(gt, Icons.local_activity_outlined, l10n.recap_activity, recap.activity),
                 const SizedBox(height: 12),
-                _recapRow(gt, Icons.location_on_outlined, '地点', recap.location),
+                _recapRow(gt, Icons.location_on_outlined, l10n.recap_location, recap.location),
                 const SizedBox(height: 12),
                 _recapRow(
                   gt,
                   Icons.group_outlined,
-                  '人数',
-                  '${recap.participants} 人',
+                  l10n.recap_participants,
+                  l10n.recap_participantsCount(recap.participants),
                 ),
                 if (recap.duration != null) ...[
                   const SizedBox(height: 12),
                   _recapRow(
                     gt,
                     Icons.schedule,
-                    '时长',
-                    '${recap.duration} 分钟',
+                    l10n.recap_duration,
+                    l10n.recap_durationMinutes(recap.duration!),
                   ),
                 ],
                 if (recap.generatedAt != null) ...[
@@ -182,7 +184,7 @@ class _RecapContent extends StatelessWidget {
           ),
           const SizedBox(height: 32),
           GlassButton(
-            label: '回到广场',
+            label: l10n.recap_backToSquare,
             icon: Icons.home,
             variant: GlassButtonVariant.primary,
             expand: true,
@@ -282,6 +284,7 @@ class _PendingRecap extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gt = GlassTheme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -291,7 +294,7 @@ class _PendingRecap extends StatelessWidget {
             const Text('✨', style: TextStyle(fontSize: 64)),
             const SizedBox(height: 16),
             Text(
-              'AI 正在为你生成回忆卡',
+              l10n.recap_aiGenerating,
               style: TextStyle(
                 color: gt.colors.textPrimary,
                 fontSize: 16,
@@ -300,12 +303,12 @@ class _PendingRecap extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              '稍等片刻或手动触发',
+              l10n.recap_waitOrTrigger,
               style: TextStyle(color: gt.colors.textSecondary, fontSize: 12),
             ),
             const SizedBox(height: 32),
             GlassButton(
-              label: '生成回忆卡',
+              label: l10n.recap_generateButton,
               icon: Icons.refresh,
               variant: GlassButtonVariant.secondary,
               isLoading: regenerating,

@@ -20,6 +20,10 @@ class AppMatch {
   final bool checkinWindowOpen;
   final DateTime? checkinWindowExpiresAt;
   final RecapCard? recapCard;
+  final Map<String, DateTime> lastReadAt;
+
+  /// 快速反馈：uid -> "met" | "no_show"（Hinge "We Met?" 模式）
+  final Map<String, String> quickFeedback;
 
   const AppMatch({
     required this.id,
@@ -38,6 +42,8 @@ class AppMatch {
     required this.checkinWindowOpen,
     required this.checkinWindowExpiresAt,
     required this.recapCard,
+    this.lastReadAt = const {},
+    this.quickFeedback = const {},
   });
 
   bool hasCheckedIn(String uid) => checkedIn.contains(uid);
@@ -87,7 +93,46 @@ class AppMatch {
       recapCard: data['recapCard'] is Map<String, dynamic>
           ? RecapCard.fromMap(data['recapCard'] as Map<String, dynamic>)
           : null,
+      lastReadAt: _parseLastReadAt(data['lastReadAt']),
+      quickFeedback: _parseQuickFeedback(data['quickFeedback']),
     );
+  }
+
+  static Map<String, DateTime> _parseLastReadAt(Object? raw) {
+    if (raw is! Map) return const {};
+    final result = <String, DateTime>{};
+    raw.forEach((key, value) {
+      if (key is String && value is Timestamp) {
+        result[key] = value.toDate();
+      }
+    });
+    return result;
+  }
+
+  /// 解析 quickFeedback map：uid -> "met" | "no_show"
+  static Map<String, String> _parseQuickFeedback(Object? raw) {
+    if (raw is! Map) return const {};
+    final result = <String, String>{};
+    raw.forEach((key, value) {
+      if (key is String && value is String) {
+        result[key] = value;
+      }
+    });
+    return result;
+  }
+
+  /// 当前用户是否已提交快速反馈。
+  bool hasQuickFeedback(String uid) => quickFeedback.containsKey(uid);
+
+  /// 获取当前用户的快速反馈值。
+  String? getQuickFeedback(String uid) => quickFeedback[uid];
+
+  /// 判断某用户是否有未读消息。
+  bool hasUnread(String uid) {
+    if (lastMessageAt == null) return false;
+    final readAt = lastReadAt[uid];
+    if (readAt == null) return lastMessageAt != null;
+    return lastMessageAt!.isAfter(readAt);
   }
 }
 

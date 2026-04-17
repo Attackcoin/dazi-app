@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -66,7 +67,7 @@ class _StepNameAvatarState extends ConsumerState<StepNameAvatar> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('上传失败：$e')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.onboarding_name_uploadFailed('$e'))),
       );
     } finally {
       if (mounted) setState(() => _uploading = false);
@@ -76,15 +77,16 @@ class _StepNameAvatarState extends ConsumerState<StepNameAvatar> {
   @override
   Widget build(BuildContext context) {
     final gt = GlassTheme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.all(Spacing.space24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('给自己起个名字', style: Theme.of(context).textTheme.displayLarge),
+          Text(l10n.onboarding_name_title, style: Theme.of(context).textTheme.displayLarge),
           const SizedBox(height: Spacing.space8),
           Text(
-            '让搭子一眼记住你',
+            l10n.onboarding_name_subtitle,
             style: Theme.of(context)
                 .textTheme
                 .bodyLarge
@@ -147,7 +149,7 @@ class _StepNameAvatarState extends ConsumerState<StepNameAvatar> {
             maxLength: 12,
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            decoration: const InputDecoration(hintText: '输入你的昵称'),
+            decoration: InputDecoration(hintText: l10n.onboarding_name_hint),
             onChanged: widget.onNameChanged,
           ),
         ],

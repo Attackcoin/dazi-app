@@ -11,6 +11,9 @@
 | T1: UI 修复 (HIGH + MEDIUM) | `task-ui-fixes/` | 完成，flutter analyze 零错误 |
 | Fix HIGH SD-5 + split profile_screen | `task-fix-high-sd5-and-split-profile/` | 完成，CI 46/46 PASS (2026-04-13) |
 | T1: Repository 单测补齐 + ErrorRetryView 组件化 | `task-t1-tests-and-retry/` | 进行中 (2026-04-13) |
+| T5-02+T5-07: 押金保障标签 + 演出分类 | `task-deposit-tag-and-concert-category/` | 完成 (2026-04-16) |
+| T5-01: 身份验证 UI（徽章+入口） | `task-identity-verification-ui/` | 完成 (2026-04-17) |
+| T5-04: 地理搜索增强（Algolia GeoSearch） | `task-geo-search/` | 完成 (2026-04-17) |
 
 ---
 

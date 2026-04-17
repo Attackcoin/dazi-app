@@ -42,3 +42,11 @@ final myMatchesProvider = StreamProvider<List<AppMatch>>((ref) {
 final matchByIdProvider = StreamProvider.family<AppMatch?, String>((ref, id) {
   return ref.watch(matchRepositoryProvider).watchMatch(id);
 });
+
+/// 未读消息的 match 数量 —— 驱动底部导航「消息」tab 的 badge。
+final unreadMatchCountProvider = Provider<int>((ref) {
+  final uid = ref.watch(authStateProvider).valueOrNull?.uid;
+  if (uid == null) return 0;
+  final matches = ref.watch(myMatchesProvider).valueOrNull ?? const [];
+  return matches.where((m) => m.hasUnread(uid)).length;
+});

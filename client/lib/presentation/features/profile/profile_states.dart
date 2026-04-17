@@ -52,7 +52,7 @@ class _ErrorState extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh, size: 16),
-              label: const Text('重试'),
+              label: Text(AppLocalizations.of(context)!.common_retry),
             ),
           ],
         ),

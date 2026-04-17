@@ -9,6 +9,8 @@ import 'package:dazi_app/data/services/location_service.dart';
 import 'package:dazi_app/presentation/features/home/home_screen.dart';
 import 'package:dazi_app/presentation/features/home/widgets/post_card.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -48,10 +50,18 @@ Widget _wrap({required List<Override> overrides}) {
       locationServiceProvider.overrideWithValue(_FakeLocationService()),
       ...overrides,
     ],
-    child: const GlassTheme(
+    child: GlassTheme(
       data: GlassThemeData.dark,
       child: MaterialApp(
-        home: Scaffold(body: HomeScreen()),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('zh'),
+        home: const Scaffold(body: HomeScreen()),
       ),
     ),
   );

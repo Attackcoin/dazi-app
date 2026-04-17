@@ -11,6 +11,7 @@ extension _GenderQuotaSection on _CreatePostScreenState {
     final total = _draft.totalSlots;
     final colors = GlassTheme.of(context).colors;
 
+    final l10n = AppLocalizations.of(context)!;
     return GlassCard(
       level: 1,
       padding: const EdgeInsets.fromLTRB(18, 8, 18, 16),
@@ -20,12 +21,12 @@ extension _GenderQuotaSection on _CreatePostScreenState {
           Row(
             children: [
               Text(
-                '性别配额',
+                l10n.createPost_genderQuota,
                 style: TextStyle(fontSize: 14, color: colors.textPrimary),
               ),
               const SizedBox(width: 6),
               Text(
-                '（可选）',
+                l10n.createPost_genderQuotaOptional,
                 style: TextStyle(fontSize: 11, color: colors.textTertiary),
               ),
               const Spacer(),
@@ -47,7 +48,7 @@ extension _GenderQuotaSection on _CreatePostScreenState {
           ),
           if (_genderQuotaEnabled) ...[
             _quotaSlider(
-              label: '男生',
+              label: l10n.createPost_genderQuotaMale,
               icon: Icons.male,
               value: male,
               total: total,
@@ -60,7 +61,7 @@ extension _GenderQuotaSection on _CreatePostScreenState {
               }),
             ),
             _quotaSlider(
-              label: '女生',
+              label: l10n.createPost_genderQuotaFemale,
               icon: Icons.female,
               value: female,
               total: total,
@@ -73,7 +74,7 @@ extension _GenderQuotaSection on _CreatePostScreenState {
               }),
             ),
             Text(
-              '合计 ${male + female} / $total',
+              l10n.createPost_genderQuotaTotal(male + female, total),
               style: TextStyle(
                 fontSize: 11,
                 color: colors.textSecondary,

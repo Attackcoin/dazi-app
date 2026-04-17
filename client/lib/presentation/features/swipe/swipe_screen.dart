@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/glass_theme.dart';
@@ -9,6 +9,7 @@ import '../../../core/widgets/celebration_overlay.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/glow_background.dart';
 import '../../../data/models/post.dart';
+import '../../../data/models/application.dart';
 import '../../../data/repositories/application_repository.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/post_repository.dart';
@@ -25,6 +26,13 @@ const _backCardOpacity = 0.6;
 // ============================================================
 // SwipeScreen
 // ============================================================
+
+String _costTypeLabel(AppLocalizations l10n, CostType t) => switch (t) {
+  CostType.aa => l10n.costType_aa,
+  CostType.host => l10n.costType_host,
+  CostType.self => l10n.costType_self,
+  CostType.tbd => l10n.costType_tbd,
+};
 
 /// Tinder 风格滑动首页 —— 左滑跳过，右滑加入。
 class SwipeScreen extends ConsumerStatefulWidget {
@@ -156,7 +164,7 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen>
     final sw = MediaQuery.of(context).size.width;
     _flyAway(Offset(sw * 1.5, _dragOffset.dy), onDone: () async {
       try {
-        await ref
+        final result = await ref
             .read(applicationRepositoryProvider)
             .applyToPost(post.id);
 
@@ -168,16 +176,21 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen>
           _joining = false;
         });
 
-        // 使用 CelebrationOverlay 替代自定义 overlay
         await CelebrationOverlay.showJoinSuccess(context, title: post.title);
         if (!mounted) return;
 
-        // 跳到群聊（用 postId 作为 chatId）
-        context.push('/chat/${post.id}');
+        // 申请已发出，提示用户等待（match/chat 在发布者接受后才创建）
+        final l10n = AppLocalizations.of(context)!;
+        final msg = result.status == ApplicationStatus.waitlisted
+            ? l10n.swipe_waitlisted
+            : l10n.swipe_applicationSent;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg)),
+        );
       } catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('加入失败：$e')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.swipe_joinFailed('$e'))),
         );
         setState(() {
           _currentIndex++;
@@ -220,7 +233,7 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen>
             Icon(Icons.location_on, color: gt.colors.primary, size: 18),
             const SizedBox(width: 4),
             Text(
-              city ?? '附近',
+              city ?? AppLocalizations.of(context)!.common_nearby,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
             ),
           ],
@@ -245,11 +258,11 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen>
                 Icon(Icons.error_outline, size: 48,
                     color: gt.colors.textTertiary),
                 const SizedBox(height: 12),
-                const Text('加载失败'),
+                Text(AppLocalizations.of(context)!.common_loadFailed),
                 const SizedBox(height: 12),
                 FilledButton.tonal(
                   onPressed: () => ref.invalidate(feedProvider(query)),
-                  child: const Text('重试'),
+                  child: Text(AppLocalizations.of(context)!.common_retry),
                 ),
               ],
             ),
@@ -315,19 +328,17 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen>
                 child: Stack(
                   children: [
                     _SwipeCard(post: available[_currentIndex]),
-                    // 左滑标签
                     _SwipeLabel(
                       alignment: Alignment.topRight,
                       rotation: 0.3,
-                      text: '跳过',
+                      text: AppLocalizations.of(context)!.swipe_labelSkip,
                       color: gt.colors.error,
                       opacity: ((-_dragOffset.dx - 30) / 70).clamp(0, 1),
                     ),
-                    // 右滑标签
                     _SwipeLabel(
                       alignment: Alignment.topLeft,
                       rotation: -0.3,
-                      text: '加入',
+                      text: AppLocalizations.of(context)!.swipe_labelJoin,
                       color: gt.colors.success,
                       opacity: ((_dragOffset.dx - 30) / 70).clamp(0, 1),
                     ),
@@ -435,9 +446,10 @@ class _SwipeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gt = GlassTheme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final tags = <String>[
-      post.costType.label,
-      if (post.isSocialAnxietyFriendly) '社恐友好',
+      _costTypeLabel(l10n, post.costType),
+      if (post.isSocialAnxietyFriendly) l10n.swipe_socialAnxietyFriendly,
     ];
 
     return GlassCard(
@@ -533,16 +545,16 @@ class _SwipeCard extends StatelessWidget {
                     children: [
                       _infoRow(Icons.schedule,
                           post.time != null
-                              ? DateFormat('M月d日 EEE HH:mm', 'zh_CN')
+                              ? DateFormat('M/d EEE HH:mm')
                                   .format(post.time!)
-                              : '时间待定',
+                              : l10n.common_timeTbd,
                           gt),
                       const SizedBox(height: 10),
                       _infoRow(Icons.location_on_outlined,
-                          post.location?.name ?? '地点待定', gt),
+                          post.location?.name ?? l10n.common_locationTbd, gt),
                       const SizedBox(height: 10),
                       _infoRow(Icons.people_outline,
-                          '${post.acceptedCount}/${post.totalSlots} 人', gt),
+                          '${post.acceptedCount}/${post.totalSlots}', gt),
                       const Spacer(),
                       // 标签
                       Wrap(
@@ -592,13 +604,13 @@ class _SwipeCard extends StatelessWidget {
   }
 
   static IconData _categoryIcon(String cat) {
-    if (cat.contains('吃') || cat.contains('喝') || cat.contains('火锅')) {
+    if (cat.contains('美食') || cat.contains('吃') || cat.contains('喝') || cat.contains('火锅')) {
       return Icons.restaurant;
     }
     if (cat.contains('运动') || cat.contains('健身')) return Icons.fitness_center;
     if (cat.contains('游戏') || cat.contains('娱乐')) return Icons.sports_esports;
-    if (cat.contains('旅') || cat.contains('出行')) return Icons.flight;
-    if (cat.contains('学') || cat.contains('读书')) return Icons.menu_book;
+    if (cat.contains('旅') || cat.contains('出行') || cat.contains('旅行')) return Icons.flight;
+    if (cat.contains('学') || cat.contains('读书') || cat.contains('学习')) return Icons.menu_book;
     return Icons.celebration;
   }
 
@@ -705,12 +717,12 @@ class _EmptyState extends StatelessWidget {
             const Text('👀', style: TextStyle(fontSize: 64)),
             const SizedBox(height: 16),
             Text(
-              '附近的局都看完了',
+              AppLocalizations.of(context)!.swipe_emptyTitle,
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
             Text(
-              '下拉刷新或自己发一个局吧!',
+              AppLocalizations.of(context)!.swipe_emptyHint,
               style: TextStyle(color: gt.colors.textSecondary),
             ),
           ],

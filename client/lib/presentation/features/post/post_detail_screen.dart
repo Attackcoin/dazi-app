@@ -1,8 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../core/theme/glass_theme.dart';
 import '../../../core/widgets/avatar_stack.dart';
@@ -10,6 +12,7 @@ import '../../../core/widgets/error_retry_view.dart';
 import '../../../core/widgets/glass_button.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/glow_background.dart';
+import '../../../core/widgets/pill_tag.dart';
 import '../../../data/models/application.dart';
 import '../../../data/models/post.dart';
 import '../../../data/repositories/application_repository.dart';
@@ -19,6 +22,22 @@ import '../../../data/repositories/post_repository.dart';
 import '../../../data/repositories/user_repository.dart';
 import 'widgets/application_list_sheet.dart';
 import 'widgets/apply_sheet.dart';
+
+String _costTypeLabel(AppLocalizations l10n, CostType t) => switch (t) {
+  CostType.aa => l10n.costType_aa,
+  CostType.host => l10n.costType_host,
+  CostType.self => l10n.costType_self,
+  CostType.tbd => l10n.costType_tbd,
+};
+
+String _applicationStatusLabel(AppLocalizations l10n, ApplicationStatus s) => switch (s) {
+  ApplicationStatus.pending => l10n.applicationList_statusPending,
+  ApplicationStatus.accepted => l10n.applicationList_statusAccepted,
+  ApplicationStatus.rejected => l10n.applicationList_statusRejected,
+  ApplicationStatus.waitlisted => l10n.applicationList_statusWaitlisted,
+  ApplicationStatus.expired => l10n.applicationList_statusExpired,
+  ApplicationStatus.cancelled => l10n.applicationList_statusCancelled,
+};
 
 class PostDetailScreen extends ConsumerWidget {
   const PostDetailScreen({super.key, required this.postId});
@@ -50,10 +69,25 @@ class PostDetailScreen extends ConsumerWidget {
     );
   }
 
+  static const _hostingDomain = 'dazi-prod-9c9d6.web.app';
+
+  void _sharePost(BuildContext context, Post post) {
+    final l10n = AppLocalizations.of(context)!;
+    final url = 'https://$_hostingDomain/p/${post.id}';
+    final timePart = post.time != null
+        ? '\n${DateFormat('M/d HH:mm').format(post.time!)}'
+        : '';
+    final locationPart = post.location?.name.isNotEmpty == true
+        ? '\n${post.location!.name}'
+        : '';
+    final text = '${post.title}$timePart$locationPart\n\n${l10n.share_postMessage}\n$url';
+    SharePlus.instance.share(ShareParams(text: text));
+  }
+
   Widget _notFound(BuildContext context) {
     return Scaffold(
       appBar: AppBar(),
-      body: const Center(child: Text('帖子不存在或已删除')),
+      body: Center(child: Text(AppLocalizations.of(context)!.postDetail_notFound)),
     );
   }
 
@@ -76,6 +110,17 @@ class PostDetailScreen extends ConsumerWidget {
                 onPressed: () => context.pop(),
               ),
             ),
+            actions: [
+              CircleAvatar(
+                backgroundColor: Colors.black38,
+                child: IconButton(
+                  icon: const Icon(Icons.share, color: Colors.white, size: 18),
+                  tooltip: AppLocalizations.of(context)!.share_button,
+                  onPressed: () => _sharePost(context, post),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               background: Hero(
                 tag: 'post-${post.id}',
@@ -92,6 +137,7 @@ class PostDetailScreen extends ConsumerWidget {
                     : CachedNetworkImage(
                         imageUrl: post.images.first,
                         fit: BoxFit.cover,
+                        memCacheWidth: 800,
                       ),
               ),
             ),
@@ -130,13 +176,21 @@ class PostDetailScreen extends ConsumerWidget {
                   const SizedBox(height: 20),
                   // Info panel — GlassCard level:1
                   _buildInfoBox(context, post, gt),
+                  if (post.isSeries) ...[
+                    const SizedBox(height: 12),
+                    _SeriesInfoSection(post: post),
+                  ],
+                  if (post.depositAmount > 0) ...[
+                    const SizedBox(height: 12),
+                    _buildDepositBanner(context, post, gt),
+                  ],
                   const SizedBox(height: 20),
                   // Participants section — AvatarStack
                   _buildParticipantsSection(context, post, gt),
                   const SizedBox(height: 24),
                   if (post.description.isNotEmpty) ...[
                     Text(
-                      '活动介绍',
+                      AppLocalizations.of(context)!.postDetail_activityDescription,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: gt.colors.textPrimary,
                       ),
@@ -159,6 +213,7 @@ class PostDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildInfoBox(BuildContext context, Post post, GlassThemeData gt) {
+    final l10n = AppLocalizations.of(context)!;
     return GlassCard(
       level: 1,
       padding: const EdgeInsets.all(16),
@@ -166,33 +221,33 @@ class PostDetailScreen extends ConsumerWidget {
         children: [
           _infoRow(
             Icons.schedule,
-            '时间',
+            l10n.postDetail_timeLabel,
             post.time == null
-                ? '待定'
-                : DateFormat('yyyy年M月d日 HH:mm').format(post.time!),
+                ? l10n.common_tbd
+                : DateFormat('yyyy-MM-dd HH:mm').format(post.time!),
             gt,
           ),
           const SizedBox(height: 10),
           _infoRow(
             Icons.location_on_outlined,
-            '地点',
-            post.location?.name ?? '待定',
+            l10n.postDetail_placeLabel,
+            post.location?.name ?? l10n.common_tbd,
             gt,
           ),
           const SizedBox(height: 10),
           _infoRow(
             Icons.payments_outlined,
-            '费用',
+            l10n.postDetail_costLabel,
             post.depositAmount > 0
-                ? '${post.costType.label} · 押金 ¥${post.depositAmount}'
-                : post.costType.label,
+                ? l10n.postDetail_costWithDeposit(_costTypeLabel(l10n, post.costType), post.depositAmount)
+                : _costTypeLabel(l10n, post.costType),
             gt,
           ),
           const SizedBox(height: 10),
           _infoRow(
             Icons.group_outlined,
-            '人数',
-            '${post.acceptedCount}/${post.totalSlots} 人',
+            l10n.postDetail_slotsLabel,
+            l10n.postDetail_peopleCount(post.acceptedCount, post.totalSlots),
             gt,
           ),
         ],
@@ -200,11 +255,57 @@ class PostDetailScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildDepositBanner(BuildContext context, Post post, GlassThemeData gt) {
+    final l10n = AppLocalizations.of(context)!;
+    return GlassCard(
+      level: 2,
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: gt.colors.success.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(Icons.shield_outlined, size: 20, color: gt.colors.success),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.postDetail_depositBadge(post.depositAmount),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: gt.colors.success,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  l10n.postDetail_depositDescription,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: gt.colors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildParticipantsSection(BuildContext context, Post post, GlassThemeData gt) {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       children: [
         Text(
-          '参与者',
+          l10n.postDetail_participants,
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -212,11 +313,10 @@ class PostDetailScreen extends ConsumerWidget {
           ),
         ),
         const SizedBox(width: 12),
-        // participantAvatarUrls 从 match.participantInfo 获取，帖子详情页暂不展示
         const AvatarStack(avatarUrls: [], size: 28),
         const Spacer(),
         Text(
-          '${post.acceptedCount}/${post.totalSlots} 人',
+          l10n.postDetail_peopleCount(post.acceptedCount, post.totalSlots),
           style: TextStyle(
             fontSize: 13,
             color: gt.colors.textTertiary,
@@ -293,11 +393,12 @@ class _OwnerButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final gt = GlassTheme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       children: [
         Expanded(
           child: GlassButton(
-            label: '查看申请列表',
+            label: l10n.postDetail_viewApplications,
             icon: Icons.list_alt,
             variant: GlassButtonVariant.secondary,
             expand: true,
@@ -309,10 +410,10 @@ class _OwnerButton extends ConsumerWidget {
           icon: Icon(Icons.more_vert, color: gt.colors.textSecondary),
           onSelected: (action) => _handleAction(context, ref, action),
           itemBuilder: (_) => [
-            const PopupMenuItem(value: 'cancel', child: Text('取消活动')),
+            PopupMenuItem(value: 'cancel', child: Text(l10n.postDetail_cancelActivity)),
             PopupMenuItem(
               value: 'delete',
-              child: Text('删除帖子', style: TextStyle(color: gt.colors.error)),
+              child: Text(l10n.postDetail_deletePost, style: TextStyle(color: gt.colors.error)),
             ),
           ],
         ),
@@ -322,18 +423,19 @@ class _OwnerButton extends ConsumerWidget {
 
   Future<void> _handleAction(BuildContext context, WidgetRef ref, String action) async {
     final gt = GlassTheme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     if (action == 'cancel') {
       final confirm = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('取消活动'),
-          content: const Text('取消后所有申请者会收到通知，确定取消吗？'),
+          title: Text(l10n.postDetail_cancelActivity),
+          content: Text(l10n.postDetail_cancelConfirmContent),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('再想想')),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.postDetail_cancelRethink)),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: ElevatedButton.styleFrom(backgroundColor: gt.colors.error),
-              child: const Text('确定取消'),
+              child: Text(l10n.postDetail_cancelConfirmButton),
             ),
           ],
         ),
@@ -342,24 +444,24 @@ class _OwnerButton extends ConsumerWidget {
       try {
         await ref.read(postCreateRepositoryProvider).cancelPost(postId);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('活动已取消')));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.postDetail_cancelled)));
           context.pop();
         }
       } catch (e) {
-        if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('操作失败：$e')));
+        if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.common_actionFailed('$e'))));
       }
     } else if (action == 'delete') {
       final confirm = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('删除帖子'),
-          content: const Text('删除后不可恢复，确定吗？'),
+          title: Text(l10n.postDetail_deletePost),
+          content: Text(l10n.postDetail_deleteConfirmContent),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.common_cancel)),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: ElevatedButton.styleFrom(backgroundColor: gt.colors.error),
-              child: const Text('删除'),
+              child: Text(l10n.postDetail_deleteConfirmButton),
             ),
           ],
         ),
@@ -368,11 +470,11 @@ class _OwnerButton extends ConsumerWidget {
       try {
         await ref.read(postCreateRepositoryProvider).deletePost(postId);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('帖子已删除')));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.postDetail_deleted)));
           context.go('/');
         }
       } catch (e) {
-        if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('操作失败：$e')));
+        if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.common_actionFailed('$e'))));
       }
     }
   }
@@ -385,6 +487,7 @@ class _ApplicantButtons extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final myAppAsync = ref.watch(myApplicationForPostProvider(post.id));
     final existing = myAppAsync.valueOrNull;
 
@@ -392,21 +495,20 @@ class _ApplicantButtons extends ConsumerWidget {
     bool enabled;
 
     if (post.status == PostStatus.expired) {
-      label = '活动已过期';
+      label = l10n.postDetail_activityExpired;
       enabled = false;
     } else if (post.status == PostStatus.cancelled) {
-      label = '活动已取消';
+      label = l10n.postDetail_activityCancelled;
       enabled = false;
     } else if (post.status == PostStatus.done) {
-      label = '活动已结束';
+      label = l10n.postDetail_activityDone;
       enabled = false;
     } else if (existing != null && existing.status.isActive) {
-      // 已申请 — 显示状态 + 撤回按钮
       return Row(
         children: [
           Expanded(
             child: GlassButton(
-              label: '已申请 · ${existing.status.label}',
+              label: l10n.postDetail_statusApplied(_applicationStatusLabel(l10n, existing.status)),
               onPressed: null,
               variant: GlassButtonVariant.ghost,
               expand: true,
@@ -414,17 +516,17 @@ class _ApplicantButtons extends ConsumerWidget {
           ),
           const SizedBox(width: 12),
           GlassButton(
-            label: '撤回',
+            label: l10n.postDetail_withdrawApplication,
             onPressed: () => _handleWithdraw(context, ref, existing.id),
             variant: GlassButtonVariant.danger,
           ),
         ],
       );
     } else if (post.isFull) {
-      label = '加入候补';
+      label = l10n.postDetail_joinWaitlist;
       enabled = true;
     } else {
-      label = '立即申请';
+      label = l10n.postDetail_applyNow;
       enabled = true;
     }
 
@@ -449,14 +551,14 @@ class _ApplicantButtons extends ConsumerWidget {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('撤回申请'),
-        content: const Text('确定撤回这条申请吗？'),
+        title: Text(AppLocalizations.of(context)!.postDetail_withdrawConfirmTitle),
+        content: Text(AppLocalizations.of(context)!.postDetail_withdrawConfirmContent),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(AppLocalizations.of(context)!.common_cancel)),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: gt.colors.error),
-            child: const Text('撤回'),
+            child: Text(AppLocalizations.of(context)!.postDetail_withdrawApplication),
           ),
         ],
       ),
@@ -465,19 +567,20 @@ class _ApplicantButtons extends ConsumerWidget {
     try {
       await ref.read(applicationRepositoryProvider).withdrawApplication(applicationId);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('申请已撤回')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.postDetail_withdrawn)));
       }
     } catch (e) {
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('操作失败：$e')));
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.common_actionFailed('$e'))));
     }
   }
 
   Future<void> _handleApply(BuildContext context, WidgetRef ref) async {
     final result = await showApplySheet(context, post);
     if (result == null || !context.mounted) return;
+    final l10n = AppLocalizations.of(context)!;
     final msg = result.status == ApplicationStatus.waitlisted
-        ? '已加入候补名单 ⏳'
-        : '申请已发出，等待发布者回应 🎉';
+        ? l10n.postDetail_applicationWaitlisted
+        : l10n.postDetail_applicationSent;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 }
@@ -514,20 +617,32 @@ class _PublisherRow extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  user.name,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: gt.colors.textPrimary,
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        user.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: gt.colors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    if (user.verificationLevel >= 2) ...[
+                      const SizedBox(width: 4),
+                      _VerifiedIcon(gt: gt),
+                    ],
+                  ],
                 ),
                 Row(
                   children: [
                     Icon(Icons.star, size: 13, color: gt.colors.starColor),
                     const SizedBox(width: 3),
                     Text(
-                      '${user.rating.toStringAsFixed(1)} · ${user.reviewCount} 条评价',
+                      '${user.rating.toStringAsFixed(1)} · ${AppLocalizations.of(context)!.postDetail_reviewCount(user.reviewCount)}',
                       style: TextStyle(
                         fontSize: 11,
                         color: gt.colors.textSecondary,
@@ -541,6 +656,219 @@ class _PublisherRow extends ConsumerWidget {
           Icon(Icons.chevron_right, size: 18, color: gt.colors.textTertiary),
         ],
       ),
+    );
+  }
+}
+
+/// 系列活动信息区域 —— 显示频率、当前周数/总周数 + 可展开的"其他期次"列表。
+class _SeriesInfoSection extends ConsumerStatefulWidget {
+  const _SeriesInfoSection({required this.post});
+
+  final Post post;
+
+  @override
+  ConsumerState<_SeriesInfoSection> createState() => _SeriesInfoSectionState();
+}
+
+class _SeriesInfoSectionState extends ConsumerState<_SeriesInfoSection> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final gt = GlassTheme.of(context);
+    final post = widget.post;
+    final l10n = AppLocalizations.of(context)!;
+
+    final recurrenceLabel = post.recurrence == 'biweekly'
+        ? l10n.post_seriesRecurrenceBiweekly
+        : l10n.post_seriesRecurrenceWeekly;
+
+    return GlassCard(
+      level: 1,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: gt.colors.info.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.event_repeat, size: 20, color: gt.colors.info),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          l10n.post_seriesActivity,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: gt.colors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        PillTag(
+                          label: l10n.post_seriesWeekOf(
+                            post.seriesWeek ?? 1,
+                            post.seriesTotalWeeks ?? 1,
+                          ),
+                          color: gt.colors.info,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      recurrenceLabel,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: gt.colors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (post.seriesId != null && post.seriesId!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: () => setState(() => _expanded = !_expanded),
+              child: Row(
+                children: [
+                  Text(
+                    _expanded
+                        ? l10n.post_seriesOtherWeeks
+                        : l10n.post_viewFullSeries,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: gt.colors.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    size: 18,
+                    color: gt.colors.primary,
+                  ),
+                ],
+              ),
+            ),
+            if (_expanded) _buildSeriesList(context, post, gt, l10n),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSeriesList(
+    BuildContext context,
+    Post currentPost,
+    GlassThemeData gt,
+    AppLocalizations l10n,
+  ) {
+    final seriesAsync = ref.watch(seriesPostsProvider(currentPost.seriesId!));
+    return seriesAsync.when(
+      data: (posts) {
+        if (posts.isEmpty) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Column(
+            children: posts.map((p) {
+              final isCurrent = p.id == currentPost.id;
+              return ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                leading: CircleAvatar(
+                  radius: 14,
+                  backgroundColor: isCurrent
+                      ? gt.colors.primary.withValues(alpha: 0.15)
+                      : gt.colors.glassL1Bg,
+                  child: Text(
+                    '${p.seriesWeek ?? 0}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isCurrent
+                          ? gt.colors.primary
+                          : gt.colors.textSecondary,
+                    ),
+                  ),
+                ),
+                title: Text(
+                  p.time == null
+                      ? l10n.common_timeTbd
+                      : DateFormat('M/d HH:mm').format(p.time!),
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w400,
+                    color: gt.colors.textPrimary,
+                  ),
+                ),
+                trailing: PillTag(
+                  label: _statusLabel(l10n, p.status),
+                  color: _statusColor(gt, p.status),
+                ),
+                onTap: isCurrent
+                    ? null
+                    : () => context.push('/post/${p.id}'),
+              );
+            }).toList(),
+          ),
+        );
+      },
+      loading: () => const Padding(
+        padding: EdgeInsets.only(top: 8),
+        child: Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  String _statusLabel(AppLocalizations l10n, PostStatus s) => switch (s) {
+    PostStatus.open => l10n.postStatus_open,
+    PostStatus.full => l10n.postStatus_full,
+    PostStatus.done => l10n.postStatus_done,
+    PostStatus.cancelled => l10n.postStatus_cancelled,
+    PostStatus.expired => l10n.postStatus_expired,
+  };
+
+  Color _statusColor(GlassThemeData gt, PostStatus s) => switch (s) {
+    PostStatus.open => gt.colors.success,
+    PostStatus.full => gt.colors.info,
+    PostStatus.done => gt.colors.textTertiary,
+    PostStatus.cancelled => gt.colors.error,
+    PostStatus.expired => gt.colors.textTertiary,
+  };
+}
+
+/// 已验证小图标 — 蓝色 verified_user。
+class _VerifiedIcon extends StatelessWidget {
+  const _VerifiedIcon({required this.gt});
+
+  final GlassThemeData gt;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Semantics(
+      label: l10n.post_verifiedPublisher,
+      child: Icon(Icons.verified_user, size: 15, color: gt.colors.info),
     );
   }
 }

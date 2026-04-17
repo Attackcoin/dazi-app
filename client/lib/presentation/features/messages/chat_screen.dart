@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -16,6 +17,7 @@ import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/chat_repository.dart';
 import '../../../data/repositories/post_create_repository.dart';
 import '../../../data/repositories/post_repository.dart';
+import '../../../data/repositories/safety_repository.dart';
 import 'widgets/chat_input_bar.dart';
 
 /// 群聊页面。`chatId` 等于 postId —— 每个局一个群聊。
@@ -69,7 +71,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('图片发送失败：$e')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.chat_imageSendFailed('$e'))),
         );
       }
     }
@@ -104,7 +106,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final myUid = ref.watch(authStateProvider).valueOrNull?.uid ?? '';
 
     final post = postAsync.valueOrNull;
-    final title = post?.title ?? '群聊';
+    final l10n = AppLocalizations.of(context)!;
+    final title = post?.title ?? l10n.chat_defaultTitle;
 
     return Scaffold(
       backgroundColor: gt.colors.base,
@@ -119,7 +122,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
             if (post != null)
               Text(
-                '${post.acceptedCount}/${post.totalSlots} 人',
+                l10n.chat_peopleCount(post.acceptedCount, post.totalSlots),
                 style: TextStyle(
                   fontSize: 11,
                   color: gt.colors.textSecondary,
@@ -132,7 +135,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           // 查看局详情
           IconButton(
             icon: const Icon(Icons.info_outline),
-            tooltip: '活动详情',
+            tooltip: l10n.chat_activityDetail,
             onPressed: () => context.push('/post/${widget.chatId}'),
           ),
         ],
@@ -142,13 +145,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           children: [
             // 活动时间横幅
             if (post?.time != null) _TimeBanner(time: post!.time!),
+            // 安全提醒横幅
+            _SafetyBanner(chatId: widget.chatId),
             Expanded(
               child: messagesAsync.when(
                 loading: () =>
                     const Center(child: CircularProgressIndicator()),
                 error: (e, _) => ErrorRetryView(
                   error: e,
-                  message: '消息加载失败，请重试',
+                  message: l10n.chat_messageLoadFailed,
                   onRetry: () =>
                       ref.invalidate(chatMessagesProvider(widget.chatId)),
                 ),
@@ -334,7 +339,7 @@ class _TimeBanner extends StatelessWidget {
           Icon(Icons.schedule, size: 16, color: gt.colors.primary),
           const SizedBox(width: 8),
           Text(
-            '活动时间：${DateFormat('M月d日 HH:mm').format(time)}',
+            AppLocalizations.of(context)!.chat_activityTime(DateFormat('M/d HH:mm').format(time)),
             style: TextStyle(fontSize: 12, color: gt.colors.textSecondary),
           ),
         ],
@@ -358,11 +363,93 @@ class _EmptyChat extends StatelessWidget {
             const Text('👋', style: TextStyle(fontSize: 48)),
             const SizedBox(height: 12),
             Text(
-              '群聊已创建，大家打个招呼吧~',
+              AppLocalizations.of(context)!.chat_emptyHint,
               style: TextStyle(color: gt.colors.textTertiary, fontSize: 13),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// 安全提醒横幅 —— 有 pending safety alert 时显示在聊天顶部。
+class _SafetyBanner extends ConsumerStatefulWidget {
+  const _SafetyBanner({required this.chatId});
+
+  final String chatId;
+
+  @override
+  ConsumerState<_SafetyBanner> createState() => _SafetyBannerState();
+}
+
+class _SafetyBannerState extends ConsumerState<_SafetyBanner> {
+  bool _confirming = false;
+
+  Future<void> _handleConfirm() async {
+    if (_confirming) return;
+    setState(() => _confirming = true);
+    try {
+      await ref.read(safetyRepositoryProvider).confirmSafety();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.safety_confirmed)),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.safety_confirmFailed)),
+      );
+    } finally {
+      if (mounted) setState(() => _confirming = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final alerts = ref.watch(pendingSafetyAlertsProvider).valueOrNull ?? const [];
+    // 只显示与当前聊天对应的 match 的安全提醒
+    // chatId == postId，但 safety alert 关联的是 matchId
+    // 为简化，显示任何 pending alert（用户一般只有一个）
+    if (alerts.isEmpty) return const SizedBox.shrink();
+
+    final gt = GlassTheme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      color: gt.colors.error.withValues(alpha: 0.12),
+      child: Row(
+        children: [
+          Icon(Icons.shield_outlined, size: 18, color: gt.colors.error),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              l10n.safety_bannerPending,
+              style: TextStyle(fontSize: 12, color: gt.colors.textPrimary),
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            height: 30,
+            child: TextButton(
+              style: TextButton.styleFrom(
+                backgroundColor: gt.colors.error,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+              ),
+              onPressed: _confirming ? null : _handleConfirm,
+              child: Text(
+                _confirming ? l10n.safety_confirming : l10n.safety_bannerAction,
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

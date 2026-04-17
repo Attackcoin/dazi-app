@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/glass_theme.dart';
@@ -43,11 +44,11 @@ class ApplicationListSheet extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 20),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Text(
-                '申请列表',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                AppLocalizations.of(context)!.applicationList_title,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
               ),
             ),
             const SizedBox(height: 12),
@@ -66,7 +67,7 @@ class ApplicationListSheet extends ConsumerWidget {
                       padding: const EdgeInsets.all(40),
                       child: Center(
                         child: Text(
-                          '还没有人申请哦～',
+                          AppLocalizations.of(context)!.applicationList_emptyHint,
                           style: TextStyle(
                             color: colors.textTertiary,
                             fontSize: 13,
@@ -112,12 +113,12 @@ class _ApplicationTileState extends ConsumerState<_ApplicationTile> {
           .acceptApplication(widget.app.id);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('已接受申请 ✓')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.applicationList_accepted)),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('操作失败：$e')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.applicationList_actionFailed('$e'))),
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -132,12 +133,12 @@ class _ApplicationTileState extends ConsumerState<_ApplicationTile> {
           .rejectApplication(widget.app.id);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('已拒绝')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.applicationList_rejected)),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('操作失败：$e')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.applicationList_actionFailed('$e'))),
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -148,6 +149,7 @@ class _ApplicationTileState extends ConsumerState<_ApplicationTile> {
   Widget build(BuildContext context) {
     final firestore = ref.watch(firestoreProvider);
     final colors = GlassTheme.of(context).colors;
+    final l10n = AppLocalizations.of(context)!;
     return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       future: firestore.collection('users').doc(widget.app.applicantId).get(),
       builder: (context, snap) {
@@ -179,7 +181,7 @@ class _ApplicationTileState extends ConsumerState<_ApplicationTile> {
                     Row(
                       children: [
                         Text(
-                          user?.name ?? '加载中...',
+                          user?.name ?? l10n.applicationList_loadingName,
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -193,7 +195,7 @@ class _ApplicationTileState extends ConsumerState<_ApplicationTile> {
                     Text(
                       user == null
                           ? ''
-                          : '${user.age ?? '—'}岁 · ⭐ ${user.rating.toStringAsFixed(1)}',
+                          : '${l10n.applicationList_userAge('${user.age ?? '—'}')} · ⭐ ${user.rating.toStringAsFixed(1)}',
                       style: TextStyle(
                         fontSize: 11,
                         color: colors.textSecondary,
@@ -207,13 +209,13 @@ class _ApplicationTileState extends ConsumerState<_ApplicationTile> {
                   icon: const Icon(Icons.close),
                   color: colors.textSecondary,
                   onPressed: _busy ? null : _reject,
-                  tooltip: '拒绝',
+                  tooltip: l10n.applicationList_rejectTooltip,
                 ),
                 IconButton(
                   icon: const Icon(Icons.check_circle),
                   color: colors.primary,
                   onPressed: _busy ? null : _accept,
-                  tooltip: '接受',
+                  tooltip: l10n.applicationList_acceptTooltip,
                 ),
               ],
             ],
@@ -229,9 +231,19 @@ class _StatusTag extends StatelessWidget {
 
   final ApplicationStatus status;
 
+  String _statusLabel(AppLocalizations l10n) => switch (status) {
+    ApplicationStatus.pending => l10n.applicationList_statusPending,
+    ApplicationStatus.accepted => l10n.applicationList_statusAccepted,
+    ApplicationStatus.rejected => l10n.applicationList_statusRejected,
+    ApplicationStatus.waitlisted => l10n.applicationList_statusWaitlisted,
+    ApplicationStatus.expired => l10n.applicationList_statusExpired,
+    ApplicationStatus.cancelled => l10n.applicationList_statusCancelled,
+  };
+
   @override
   Widget build(BuildContext context) {
     final colors = GlassTheme.of(context).colors;
+    final l10n = AppLocalizations.of(context)!;
     final tagColors = switch (status) {
       ApplicationStatus.accepted => (
           colors.primary.withValues(alpha: 0.1),
@@ -257,7 +269,7 @@ class _StatusTag extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        status.label,
+        _statusLabel(l10n),
         style: TextStyle(
           fontSize: 10,
           color: tagColors.$2,

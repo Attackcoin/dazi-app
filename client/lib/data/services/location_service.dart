@@ -14,6 +14,14 @@ class LocationResult {
 /// 全球可用，不限于中国。
 final locationServiceProvider = Provider<LocationService>((_) => LocationService());
 
+/// 当前位置 FutureProvider —— lazy 获取一次用户位置（含经纬度+城市名）。
+///
+/// 返回 null 表示定位失败（权限拒绝 / GPS 关闭 / 超时等）。
+/// 使用 `ref.invalidate(currentLocationProvider)` 可触发重新定位。
+final currentLocationProvider = FutureProvider<LocationResult?>((ref) {
+  return ref.watch(locationServiceProvider).getCurrentCity();
+});
+
 class LocationService {
   /// 获取当前城市。
   /// 返回 null 表示定位失败（权限拒绝、GPS 关闭等）。

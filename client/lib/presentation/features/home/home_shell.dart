@@ -1,33 +1,33 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/dazi_colors.dart';
 import '../../../core/theme/glass_theme.dart';
 import '../../../core/theme/spacing.dart';
+import '../../../data/repositories/match_repository.dart';
 
 /// 底部导航壳 —— 4 个 Tab：滑一滑 / 发现 / 消息 / 我的 + 发布按钮。
-class HomeShell extends StatelessWidget {
-  const HomeShell({super.key, required this.child});
+///
+/// 使用 [StatefulNavigationShell] 实现 Tab 状态保持：
+/// 切换 Tab 不会丢失滚动位置和页面状态。
+class HomeShell extends ConsumerWidget {
+  const HomeShell({super.key, required this.navigationShell});
 
-  final Widget child;
-
-  int _indexOf(String path) {
-    if (path.startsWith('/profile')) return 3;
-    if (path.startsWith('/messages')) return 2;
-    if (path.startsWith('/discover')) return 1;
-    return 0;
-  }
+  final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context) {
-    final path = GoRouterState.of(context).matchedLocation;
-    final index = _indexOf(path);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final index = navigationShell.currentIndex;
     final gt = GlassTheme.of(context);
+    final unreadCount = ref.watch(unreadMatchCountProvider);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      body: child,
+      body: navigationShell,
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/post/create'),
         backgroundColor: Colors.transparent,
@@ -80,31 +80,32 @@ class HomeShell extends StatelessWidget {
                   _NavItem(
                     icon: Icons.swipe_outlined,
                     activeIcon: Icons.swipe,
-                    label: '滑一滑',
+                    label: l10n.home_tabSwipe,
                     selected: index == 0,
-                    onTap: () => context.go('/'),
+                    onTap: () => navigationShell.goBranch(0),
                   ),
                   _NavItem(
                     icon: Icons.explore_outlined,
                     activeIcon: Icons.explore,
-                    label: '发现',
+                    label: l10n.home_tabDiscover,
                     selected: index == 1,
-                    onTap: () => context.go('/discover'),
+                    onTap: () => navigationShell.goBranch(1),
                   ),
                   const SizedBox(width: 48), // 给浮动按钮留位置
                   _NavItem(
                     icon: Icons.chat_bubble_outline,
                     activeIcon: Icons.chat_bubble,
-                    label: '消息',
+                    label: l10n.home_tabMessages,
                     selected: index == 2,
-                    onTap: () => context.go('/messages'),
+                    onTap: () => navigationShell.goBranch(2),
+                    badgeCount: unreadCount,
                   ),
                   _NavItem(
                     icon: Icons.person_outline,
                     activeIcon: Icons.person,
-                    label: '我的',
+                    label: l10n.home_tabProfile,
                     selected: index == 3,
-                    onTap: () => context.go('/profile'),
+                    onTap: () => navigationShell.goBranch(3),
                   ),
                 ],
               ),
@@ -123,6 +124,7 @@ class _NavItem extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    this.badgeCount = 0,
   });
 
   final IconData icon;
@@ -130,11 +132,31 @@ class _NavItem extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
+  final int badgeCount;
 
   @override
   Widget build(BuildContext context) {
     final gt = GlassTheme.of(context);
     final color = selected ? gt.colors.primary : gt.colors.textTertiary;
+
+    Widget iconWidget;
+    if (selected) {
+      iconWidget = Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: gt.colors.primaryGlow,
+              blurRadius: 12,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Icon(activeIcon, color: gt.colors.primary, size: 24),
+      );
+    } else {
+      iconWidget = Icon(icon, color: gt.colors.textTertiary, size: 24);
+    }
 
     return Expanded(
       child: InkWell(
@@ -142,22 +164,37 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (selected)
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: gt.colors.primaryGlow,
-                      blurRadius: 12,
-                      spreadRadius: 2,
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                iconWidget,
+                if (badgeCount > 0)
+                  Positioned(
+                    right: -8,
+                    top: -4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: gt.colors.accent,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      constraints: const BoxConstraints(minWidth: 16),
+                      child: Text(
+                        badgeCount > 99 ? '99+' : '$badgeCount',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
-                  ],
-                ),
-                child: Icon(activeIcon, color: gt.colors.primary, size: 24),
-              )
-            else
-              Icon(icon, color: gt.colors.textTertiary, size: 24),
+                  ),
+              ],
+            ),
             const SizedBox(height: 2),
             Text(
               label,

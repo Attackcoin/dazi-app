@@ -170,3 +170,155 @@ describe('submitCheckin (H-4 H-5 M-1)', () => {
     expect(r.success).toBe(true);
   });
 });
+
+// ─────────────────────────────────────────────────────
+// submitQuickFeedback — T5-03 快速反馈
+// ─────────────────────────────────────────────────────
+describe('submitQuickFeedback (T5-03)', () => {
+  test('参与者提交 "met" 反馈：成功写入 quickFeedback.{uid}', async () => {
+    seedUser('u1');
+    seedUser('u2');
+    seedPost('p1');
+    seedMatch('m1', ['u1', 'u2'], { status: 'completed', quickFeedback: {} });
+
+    const r = await antiGhosting.submitQuickFeedback(
+      { matchId: 'm1', feedback: 'met' },
+      makeContext('u1')
+    );
+    expect(r.success).toBe(true);
+    const match = fakeDb._get('matches/m1');
+    expect(match.quickFeedback.u1).toBe('met');
+  });
+
+  test('参与者提交 "no_show" 反馈：成功写入', async () => {
+    seedUser('u1');
+    seedUser('u2');
+    seedPost('p1');
+    seedMatch('m1', ['u1', 'u2'], { status: 'ghosted', quickFeedback: {} });
+
+    const r = await antiGhosting.submitQuickFeedback(
+      { matchId: 'm1', feedback: 'no_show' },
+      makeContext('u1')
+    );
+    expect(r.success).toBe(true);
+    const match = fakeDb._get('matches/m1');
+    expect(match.quickFeedback.u1).toBe('no_show');
+  });
+
+  test('双方都可提交，互不覆盖', async () => {
+    seedUser('u1');
+    seedUser('u2');
+    seedPost('p1');
+    seedMatch('m1', ['u1', 'u2'], { status: 'completed', quickFeedback: {} });
+
+    await antiGhosting.submitQuickFeedback(
+      { matchId: 'm1', feedback: 'met' },
+      makeContext('u1')
+    );
+    await antiGhosting.submitQuickFeedback(
+      { matchId: 'm1', feedback: 'no_show' },
+      makeContext('u2')
+    );
+
+    const match = fakeDb._get('matches/m1');
+    expect(match.quickFeedback.u1).toBe('met');
+    expect(match.quickFeedback.u2).toBe('no_show');
+  });
+
+  test('重复提交：already-exists', async () => {
+    seedUser('u1');
+    seedUser('u2');
+    seedPost('p1');
+    seedMatch('m1', ['u1', 'u2'], {
+      status: 'completed',
+      quickFeedback: { u1: 'met' },
+    });
+
+    await expectHttpsError(
+      antiGhosting.submitQuickFeedback(
+        { matchId: 'm1', feedback: 'no_show' },
+        makeContext('u1')
+      ),
+      'already-exists'
+    );
+  });
+
+  test('非参与者：permission-denied', async () => {
+    seedUser('u1');
+    seedUser('u2');
+    seedUser('stranger');
+    seedPost('p1');
+    seedMatch('m1', ['u1', 'u2'], { status: 'completed', quickFeedback: {} });
+
+    await expectHttpsError(
+      antiGhosting.submitQuickFeedback(
+        { matchId: 'm1', feedback: 'met' },
+        makeContext('stranger')
+      ),
+      'permission-denied'
+    );
+  });
+
+  test('未结束的 match：failed-precondition', async () => {
+    seedUser('u1');
+    seedUser('u2');
+    seedPost('p1');
+    seedMatch('m1', ['u1', 'u2'], { status: 'confirmed', quickFeedback: {} });
+
+    await expectHttpsError(
+      antiGhosting.submitQuickFeedback(
+        { matchId: 'm1', feedback: 'met' },
+        makeContext('u1')
+      ),
+      'failed-precondition'
+    );
+  });
+
+  test('无效 feedback 值：invalid-argument', async () => {
+    seedUser('u1');
+    seedUser('u2');
+    seedPost('p1');
+    seedMatch('m1', ['u1', 'u2'], { status: 'completed', quickFeedback: {} });
+
+    await expectHttpsError(
+      antiGhosting.submitQuickFeedback(
+        { matchId: 'm1', feedback: 'maybe' },
+        makeContext('u1')
+      ),
+      'invalid-argument'
+    );
+  });
+
+  test('未登录：unauthenticated', async () => {
+    await expectHttpsError(
+      antiGhosting.submitQuickFeedback(
+        { matchId: 'm1', feedback: 'met' },
+        makeContext(null)
+      ),
+      'unauthenticated'
+    );
+  });
+
+  test('match 不存在：not-found', async () => {
+    await expectHttpsError(
+      antiGhosting.submitQuickFeedback(
+        { matchId: 'nonexistent', feedback: 'met' },
+        makeContext('u1')
+      ),
+      'not-found'
+    );
+  });
+
+  test('ghosted_all 状态也允许提交', async () => {
+    seedUser('u1');
+    seedUser('u2');
+    seedPost('p1');
+    seedMatch('m1', ['u1', 'u2'], { status: 'ghosted_all', quickFeedback: {} });
+
+    const r = await antiGhosting.submitQuickFeedback(
+      { matchId: 'm1', feedback: 'no_show' },
+      makeContext('u1')
+    );
+    expect(r.success).toBe(true);
+  });
+});
